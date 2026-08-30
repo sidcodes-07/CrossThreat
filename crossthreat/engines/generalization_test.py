@@ -3,6 +3,7 @@ import pickle
 import pandas as pd
 import numpy as np
 import torch
+from sklearn.metrics import classification_report, confusion_matrix, precision_recall_fscore_support
 from data_pipeline import clean_data, aggregate_windows
 from temporal_model import HostSequenceDataset, TemporalWorldModel
 
@@ -65,7 +66,7 @@ def generate_mock_2017_data(output_path="c:/CyberShield/crossthreat/data/raw/CIC
         syn_flag = int(np.random.choice([0, 1]))
         ack_flag = int(np.random.choice([0, 1]))
         psh_flag = int(np.random.choice([0, 1]))
-        rst_flag = int(np.random.choice([0, 1]) if label != "Benign" else [0])
+        rst_flag = int(np.random.choice([0, 1]) if label != "Benign" else 0)
         
         records.append({
             "Timestamp": timestamp_str,
@@ -147,52 +148,69 @@ def run_generalization_test(processed_dir="c:/CyberShield/crossthreat/data/proce
     model.load_state_dict(torch.load(model_path))
     model.eval()
     
-    # Evaluate
-    correct = 0
-    total = 0
+    # Evaluate OOD
     from torch.utils.data import DataLoader
     loader = DataLoader(dataset_2017, batch_size=32, shuffle=False)
-    
+
+    all_preds_ood, all_true_ood = [], []
     with torch.no_grad():
         for batch_x, batch_y in loader:
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
             outputs = model(batch_x)
             _, predicted = torch.max(outputs.data, 1)
-            total += batch_y.size(0)
-            correct += (predicted == batch_y).sum().item()
-            
-    ood_accuracy = correct / total if total > 0 else 0.0
-    
-    # Load in-distribution test set results (we'll compute it from test_windows.pkl)
+            all_preds_ood.extend(predicted.cpu().numpy().tolist())
+            all_true_ood.extend(batch_y.cpu().numpy().tolist())
+
+    ood_accuracy = sum(p == t for p, t in zip(all_preds_ood, all_true_ood)) / len(all_true_ood) if all_true_ood else 0.0
+
+    # Evaluate in-distribution
     test_df = pd.read_pickle(os.path.join(processed_dir, "test_windows.pkl"))
     dataset_indist = HostSequenceDataset(test_df, feature_cols, label_map, seq_len=5)
     indist_loader = DataLoader(dataset_indist, batch_size=32, shuffle=False)
-    
-    correct_indist = 0
-    total_indist = 0
+
+    all_preds_indist, all_true_indist = [], []
     with torch.no_grad():
         for batch_x, batch_y in indist_loader:
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
             outputs = model(batch_x)
             _, predicted = torch.max(outputs.data, 1)
-            total_indist += batch_y.size(0)
-            correct_indist += (predicted == batch_y).sum().item()
-            
-    indist_accuracy = correct_indist / total_indist if total_indist > 0 else 0.0
-    
-    accuracy_delta = ood_accuracy - indist_accuracy
-    
+            all_preds_indist.extend(predicted.cpu().numpy().tolist())
+            all_true_indist.extend(batch_y.cpu().numpy().tolist())
+
+    indist_accuracy = sum(p == t for p, t in zip(all_preds_indist, all_true_indist)) / len(all_true_indist) if all_true_indist else 0.0
+    accuracy_delta  = ood_accuracy - indist_accuracy
+
     print(f"In-Distribution Test Accuracy: {indist_accuracy:.4f}")
     print(f"OOD CIC-IDS2017 Accuracy:      {ood_accuracy:.4f}")
     print(f"Accuracy Delta:                 {accuracy_delta:.4f}")
-    
-    results = {
-        'indist_accuracy': indist_accuracy,
-        'ood_accuracy': ood_accuracy,
-        'accuracy_delta': accuracy_delta,
-        'ood_sequences': len(dataset_2017)
+
+    # Per-class metrics for in-dist set
+    unique_ids = sorted(set(all_true_indist + all_preds_indist))
+    inv_lm = {v: k for k, v in label_map.items()}
+    prec, rec, f1, _ = precision_recall_fscore_support(
+        all_true_indist, all_preds_indist, labels=unique_ids, average=None, zero_division=0
+    )
+    per_class_indist = {
+        inv_lm.get(uid, str(uid)): {
+            "precision": float(prec[i]),
+            "recall":    float(rec[i]),
+            "f1":        float(f1[i]),
+        }
+        for i, uid in enumerate(unique_ids)
     }
-    
+
+    cm_indist = confusion_matrix(all_true_indist, all_preds_indist, labels=unique_ids)
+
+    results = {
+        'indist_accuracy':   indist_accuracy,
+        'ood_accuracy':      ood_accuracy,
+        'accuracy_delta':    accuracy_delta,
+        'ood_sequences':     len(dataset_2017),
+        'per_class_indist':  per_class_indist,
+        'confusion_matrix':  cm_indist.tolist(),
+        'class_order':       [inv_lm.get(uid, str(uid)) for uid in unique_ids],
+    }
+
     results_path = os.path.join(processed_dir, "generalization_results.pkl")
     with open(results_path, "wb") as f:
         pickle.dump(results, f)
