@@ -1,0 +1,352 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "dataset": "CSE-CIC-IDS2018",
+    "creation_date": "2026-09-01",
+    "description": "Mapping of network attack types to OSI layers and typical security controls that detect/mitigate them. Based on NIST SP 800-61, OWASP, and published attack documentation."
+  },
+  "attack_mappings": {
+    "Benign": {
+      "primary_osi_layer": "N/A",
+      "secondary_osi_layers": [],
+      "description": "Normal, non-malicious network traffic",
+      "typical_controls": ["None required"],
+      "mitigations": ["N/A"],
+      "references": ["Normal operation"]
+    },
+    "Infiltration": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Session (Layer 5)", "Transport (Layer 4)"],
+      "description": "Unauthorized access into a system, often through remote login, file transfer, or command injection exploits; adversary establishes presence on target host",
+      "typical_controls": [
+        "Application-layer IDS/IPS",
+        "WAF (Web Application Firewall)",
+        "Endpoint Detection & Response (EDR)",
+        "SIEM with behavior analytics"
+      ],
+      "mitigations": [
+        "Strong authentication (MFA)",
+        "Principle of least privilege",
+        "Input validation & sanitization",
+        "Network segmentation",
+        "Host-based firewall"
+      ],
+      "osi_explanation": "Infiltration occurs at the application level when an attacker exploits business logic or authentication mechanisms; may use transport-layer protocols (SSH, RDP) but the intrusion itself is at Layer 7.",
+      "references": [
+        "NIST SP 800-61 Rev 2 - Computer Security Incident Handling Guide",
+        "OWASP Top 10 - Broken Authentication, Injection Flaws",
+        "CIC-IDS2018 Attack Documentation - Infiltration Scenario"
+      ]
+    },
+    "Bot": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Transport (Layer 4)", "Network (Layer 3)"],
+      "description": "Botnet traffic; infected host is controlled remotely by a command-and-control (C2) server, sending outbound connections to receive malicious commands and perform coordinated attacks",
+      "typical_controls": [
+        "Endpoint Detection & Response (EDR)",
+        "DNS-based threat intelligence",
+        "IDS/IPS (for C2 signatures)",
+        "Proxy/firewall URL filtering",
+        "Behavioral malware detection"
+      ],
+      "mitigations": [
+        "Antimalware / antivirus on endpoints",
+        "DNS sinkholing of known C2 domains",
+        "Egress filtering on outbound connections",
+        "Behavior-based detection of bot communication patterns",
+        "Patch management"
+      ],
+      "osi_explanation": "Bot communication typically occurs over HTTP/HTTPS or custom protocols at Layer 7, but can also use TCP/UDP at Layer 4. Detection focuses on the malicious application-layer behavior and command-control signaling.",
+      "references": [
+        "Spamhaus Botnet Threat Report",
+        "CERT Coordination Center - Botnet Analysis",
+        "CIC-IDS2018 Botnet Scenario Documentation"
+      ]
+    },
+    "Brute Force -Web": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Transport (Layer 4)"],
+      "description": "HTTP-based brute force attack against a web application; attacker repeatedly tries username/password combinations to gain unauthorized access to a web service (e.g., web server login, API endpoint)",
+      "typical_controls": [
+        "WAF (Web Application Firewall)",
+        "Rate limiting & account lockout policies",
+        "Application-layer IDS/IPS",
+        "SIEM with login anomaly detection"
+      ],
+      "mitigations": [
+        "Multi-factor authentication (MFA)",
+        "Account lockout after N failed attempts",
+        "CAPTCHA challenges",
+        "IP reputation filtering",
+        "Strong password policies",
+        "Slow down login endpoints (exponential backoff)"
+      ],
+      "osi_explanation": "Web brute force is a Layer 7 attack; the attacker sends legitimate-looking HTTP POST requests to a login endpoint with varying credentials. The Transport layer (TCP/HTTP) is used, but the attack occurs at the application logic.",
+      "references": [
+        "OWASP Testing Guide - Brute Force Authentication",
+        "NIST SP 800-63B - Authentication and Lifecycle Management",
+        "CIC-IDS2018 Web Brute Force Documentation"
+      ]
+    },
+    "Brute Force -XSS": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Transport (Layer 4)"],
+      "description": "Cross-Site Scripting (XSS) brute force or payload testing; attacker sends many HTTP requests with varying XSS payloads to discover reflected or stored XSS vulnerabilities in a web application",
+      "typical_controls": [
+        "WAF (Web Application Firewall)",
+        "Application-layer IDS/IPS",
+        "Rate limiting on request endpoints",
+        "SIEM with payload analysis"
+      ],
+      "mitigations": [
+        "Input validation & output encoding",
+        "Content Security Policy (CSP) headers",
+        "HTTPOnly & Secure cookie flags",
+        "Regular security testing & code review",
+        "Update vulnerable libraries"
+      ],
+      "osi_explanation": "XSS attacks operate at Layer 7; the attacker crafts HTTP requests containing malicious JavaScript payloads, relying on the web application to render/execute the injected code in victim browsers.",
+      "references": [
+        "OWASP Top 10 - Cross-Site Scripting (XSS)",
+        "OWASP XSS Prevention Cheat Sheet",
+        "CIC-IDS2018 XSS Testing Scenario"
+      ]
+    },
+    "DoS-Hulk": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Transport (Layer 4)"],
+      "description": "HTTP-based Denial of Service using the HULK (HTTP Unbearable Load King) tool; attacker sends many HTTP GET/POST requests with random User-Agent and referrer headers to overwhelm a web server",
+      "typical_controls": [
+        "WAF (Web Application Firewall) with DoS protection",
+        "Rate limiting & connection throttling",
+        "DDoS mitigation service (cloud provider)",
+        "Application-layer IDS/IPS"
+      ],
+      "mitigations": [
+        "Rate limiting at web server",
+        "IP-based connection limits",
+        "CAPTCHA / JavaScript challenge for rapid requests",
+        "DDoS mitigation CDN (e.g., Cloudflare, AWS Shield)",
+        "Geo-IP filtering"
+      ],
+      "osi_explanation": "HULK DoS operates at Layer 7 by flooding the web application with HTTP requests that mimic legitimate traffic but overwhelm server resources (CPU, bandwidth, connection limits).",
+      "references": [
+        "NIST SP 800-61 - Denial of Service Attacks",
+        "OWASP - Denial of Service (DoS)",
+        "CIC-IDS2018 DoS HULK Attack Documentation"
+      ]
+    },
+    "DoS-Slowloris": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Transport (Layer 4)"],
+      "description": "Slowloris DoS attack; attacker opens many HTTP connections to a web server and sends incomplete/slow HTTP requests to keep connections open indefinitely, exhausting server connection limits",
+      "typical_controls": [
+        "WAF with Slowloris detection",
+        "Web server timeout settings",
+        "Connection limits per IP",
+        "Load balancer with connection pooling",
+        "Application-layer IDS/IPS"
+      ],
+      "mitigations": [
+        "Configure short timeout for incomplete requests",
+        "Limit connections per IP address",
+        "Reverse proxy / load balancer buffering",
+        "DDoS mitigation service",
+        "Mod_qos or similar connection-limiting modules"
+      ],
+      "osi_explanation": "Slowloris is a Layer 7 attack that exploits HTTP protocol semantics (slow transmission) to tie up server resources; the attacker uses legitimate TCP connections but sends data at an intentionally slow rate.",
+      "references": [
+        "Slowloris Attack Analysis - RSnake's 2009 Post",
+        "NIST SP 800-61 - Denial of Service Attacks",
+        "CIC-IDS2018 Slowloris Scenario"
+      ]
+    },
+    "DDoS-LOIC-HTTP": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Transport (Layer 4)"],
+      "description": "Distributed Denial of Service using the LOIC (Low Orbit Ion Cannon) HTTP mode; multiple attacker machines send high-volume HTTP requests to a target web server",
+      "typical_controls": [
+        "DDoS mitigation service (cloud-based)",
+        "WAF with DoS/DDoS protection",
+        "Firewall with rate limiting",
+        "ISP-level DDoS filtering"
+      ],
+      "mitigations": [
+        "DDoS mitigation CDN (Akamai, Cloudflare, AWS Shield)",
+        "Rate limiting at application & network levels",
+        "Anycast network topology",
+        "Geo-IP filtering",
+        "ISP DDoS protection services"
+      ],
+      "osi_explanation": "LOIC-HTTP DDoS is a Layer 7 attack sending HTTP requests; distributed means traffic comes from many sources, making IP-level blocking ineffective. Detection requires volume analysis and behavioral patterns.",
+      "references": [
+        "LOIC Malware Analysis",
+        "NIST SP 800-61 - DDoS Attacks",
+        "CIC-IDS2018 DDoS LOIC HTTP Documentation"
+      ]
+    },
+    "DDoS-HOIC": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Transport (Layer 4)"],
+      "description": "Distributed Denial of Service using HOIC (High Orbit Ion Cannon); similar to LOIC but with improved evasion (random headers, session-based targeting), sending botnet-driven HTTP requests",
+      "typical_controls": [
+        "DDoS mitigation service",
+        "Behavioral analysis (session tracking)",
+        "WAF with advanced heuristics",
+        "Firewall with protocol analysis"
+      ],
+      "mitigations": [
+        "DDoS mitigation CDN",
+        "Behavioral-based rate limiting",
+        "Session fingerprinting",
+        "Challenge-response CAPTCHA",
+        "Anycast + geographic load balancing"
+      ],
+      "osi_explanation": "HOIC DDoS operates at Layer 7 with sophisticated session-level obfuscation; each botnet node attempts to mimic legitimate users, requiring behavioral analysis beyond simple rate limiting.",
+      "references": [
+        "HOIC Botnet Analysis",
+        "High Orbit Ion Cannon Repository",
+        "CIC-IDS2018 DDoS HOIC Scenario"
+      ]
+    },
+    "SQL Injection": {
+      "primary_osi_layer": "Application (Layer 7)",
+      "secondary_osi_layers": ["Transport (Layer 4)"],
+      "description": "SQL injection attack; attacker sends specially crafted SQL statements in HTTP requests (e.g., form input, URL parameters) to manipulate backend database queries and gain unauthorized data access or modify data",
+      "typical_controls": [
+        "WAF (Web Application Firewall) with SQL injection detection",
+        "Application-layer IDS/IPS",
+        "SIEM with SQL anomaly detection",
+        "Database activity monitoring (DAM)"
+      ],
+      "mitigations": [
+        "Parameterized queries / prepared statements",
+        "Input validation & whitelist filtering",
+        "Principle of least privilege (database user permissions)",
+        "Regular security testing & code review",
+        "Update vulnerable frameworks/libraries",
+        "Escape user input properly"
+      ],
+      "osi_explanation": "SQL injection is a Layer 7 application-level attack; the malicious payload is embedded in HTTP requests, interpreted by the web application's database driver, and executed on the backend database.",
+      "references": [
+        "OWASP Top 10 - Injection Flaws",
+        "OWASP SQL Injection Prevention Cheat Sheet",
+        "CIC-IDS2018 SQL Injection Attack Documentation"
+      ]
+    },
+    "Heartbleed": {
+      "primary_osi_layer": "Transport / Presentation (Layer 4-6)",
+      "secondary_osi_layers": ["Application (Layer 7)"],
+      "description": "Heartbleed vulnerability exploitation (CVE-2014-0160); attacker sends crafted TLS heartbeat requests to extract unencrypted plaintext from server memory (SSL/TLS keys, passwords, session tokens), bypassing application-level authentication",
+      "typical_controls": [
+        "IDS/IPS (signature-based detection of Heartbleed probes)",
+        "Firewall blocking TLS heartbeat on specific servers",
+        "Endpoint Detection & Response (EDR)"
+      ],
+      "mitigations": [
+        "Immediately patch OpenSSL to 1.0.1g or later (or disable TLS heartbeat extension)",
+        "Revoke compromised SSL certificates",
+        "Regenerate cryptographic keys",
+        "Monitor for use of leaked credentials",
+        "Enable TLS 1.2+, disable older SSL/TLS versions"
+      ],
+      "osi_explanation": "Heartbleed operates at the TLS/Crypto layer (Transport-Presentation boundary, Layers 4-6) by exploiting a vulnerability in the TLS heartbeat extension; it's not an application-logic attack but a crypto-protocol exploit.",
+      "references": [
+        "Heartbleed Official Advisory - heartbleed.com",
+        "NIST - CVE-2014-0160 Heartbleed",
+        "CIC-IDS2018 Heartbleed Attack Scenario (simulated)"
+      ]
+    }
+  },
+  "osi_layer_summary": {
+    "Layer 3 (Network)": {
+      "description": "IP-level attacks (routing, packet flooding)",
+      "attacks_in_dataset": []
+    },
+    "Layer 4 (Transport)": {
+      "description": "TCP/UDP-level attacks (SYN floods, UDP floods)",
+      "attacks_in_dataset": []
+    },
+    "Layer 5 (Session)": {
+      "description": "Session hijacking, session replay",
+      "attacks_in_dataset": ["Infiltration (secondary)"]
+    },
+    "Layer 6 (Presentation)": {
+      "description": "Encryption-level attacks (Heartbleed)",
+      "attacks_in_dataset": ["Heartbleed"]
+    },
+    "Layer 7 (Application)": {
+      "description": "Application logic, web application, database attacks",
+      "attacks_in_dataset": [
+        "Infiltration",
+        "Bot",
+        "Brute Force -Web",
+        "Brute Force -XSS",
+        "DoS-Hulk",
+        "DoS-Slowloris",
+        "DDoS-LOIC-HTTP",
+        "DDoS-HOIC",
+        "SQL Injection"
+      ]
+    }
+  },
+  "control_matrix": {
+    "Firewall-Level": {
+      "description": "Network perimeter controls; packet filtering, stateful inspection, IP reputation",
+      "catches_attacks": [],
+      "effectiveness": "Low - most attacks use legitimate protocols (HTTP, HTTPS)"
+    },
+    "IDS/IPS-Level": {
+      "description": "Intrusion detection/prevention with signature matching, anomaly detection, protocol analysis",
+      "catches_attacks": [
+        "Heartbleed",
+        "SQL Injection",
+        "Brute Force -Web",
+        "Brute Force -XSS",
+        "DoS-Hulk",
+        "DoS-Slowloris",
+        "DDoS-LOIC-HTTP",
+        "DDoS-HOIC",
+        "Bot (C2 signatures)"
+      ],
+      "effectiveness": "High - signature-based and behavior-based detection"
+    },
+    "WAF-Level": {
+      "description": "Web Application Firewall; HTTP/HTTPS request filtering, payload inspection, rate limiting",
+      "catches_attacks": [
+        "Brute Force -Web",
+        "Brute Force -XSS",
+        "SQL Injection",
+        "DoS-Hulk",
+        "DoS-Slowloris",
+        "DDoS-LOIC-HTTP",
+        "DDoS-HOIC"
+      ],
+      "effectiveness": "Very High - application-layer visibility"
+    },
+    "EDR-Level": {
+      "description": "Endpoint Detection & Response; malware detection, behavior analysis, process monitoring",
+      "catches_attacks": [
+        "Infiltration",
+        "Bot",
+        "Heartbleed (credential theft detection)"
+      ],
+      "effectiveness": "High - real-time endpoint telemetry"
+    },
+    "SIEM-Level": {
+      "description": "Security Information & Event Management; log aggregation, correlation, anomaly detection",
+      "catches_attacks": [
+        "Infiltration",
+        "Bot (C2 communication patterns)",
+        "Brute Force -Web (login failures)",
+        "DoS (traffic spike detection)"
+      ],
+      "effectiveness": "Medium-High - depends on log quality and detection rules"
+    }
+  },
+  "notes": {
+    "generalization": "This mapping is based on published attack documentation, NIST guidelines, and CIC-IDS2018 official attack descriptions. It is NOT dataset-specific but represents standard cybersecurity industry knowledge.",
+    "dataset_caveat": "CIC-IDS2018 may include simplified or synthetic versions of attacks; real-world implementations may show different network signatures.",
+    "layer_classification": "Some attacks span multiple layers; primary layer is listed as the main locus of the attack logic."
+  }
+}

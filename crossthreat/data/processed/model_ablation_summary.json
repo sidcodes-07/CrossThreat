@@ -1,0 +1,75 @@
+{
+  "dataset": "CSE-CIC-IDS2018",
+  "split": "Time-based: Train days 1-7, Test days 8-10 (different attack scenarios per day)",
+  "sequence_length": 5,
+  "note": "Test set contains unseen attack types from training \u2014 this tests model generalization to new threats",
+  "exclude_note": "CNN/ViT/Swin were excluded because they are designed for 2D spatial image data and do not have a natural fit for tabular flow sequences; forcing flow windows into image-like grids would be an unjustifiable stretch.",
+  "models": [
+    {
+      "model": "lstm",
+      "train_time_seconds": 3.812,
+      "inference_latency_ms_per_batch": 0.0133,
+      "parameters": 21707,
+      "macro_f1": 0.08757955991998545,
+      "weighted_f1": 0.5135026743833999,
+      "attack_recall": 0.021538461538461538,
+      "f1_by_class": {
+        "Benign": 0.788216039279869,
+        "Infiltration": 0.0,
+        "Bot": 0.0,
+        "Brute Force -Web": 0.0,
+        "Brute Force -XSS": 0.0,
+        "DoS-Hulk": 0.0,
+        "DoS-Slowloris": 0.0,
+        "DDoS-LOIC-HTTP": 0.0,
+        "DDoS-HOIC": 0.0,
+        "SQL Injection": 0.0,
+        "Heartbleed": 0.0
+      }
+    },
+    {
+      "model": "mamba",
+      "train_time_seconds": 5.856,
+      "inference_latency_ms_per_batch": 0.0269,
+      "parameters": 14667,
+      "macro_f1": 0.06603149397909223,
+      "weighted_f1": 0.47319620216116226,
+      "attack_recall": 0.17692307692307693,
+      "f1_by_class": {
+        "Benign": 0.7263464337700145,
+        "Infiltration": 0.0,
+        "Bot": 0.0,
+        "Brute Force -Web": 0.0,
+        "Brute Force -XSS": 0.0,
+        "DoS-Hulk": 0.0,
+        "DoS-Slowloris": 0.0,
+        "DDoS-LOIC-HTTP": 0.0,
+        "DDoS-HOIC": 0.0,
+        "SQL Injection": 0.0,
+        "Heartbleed": 0.0
+      }
+    },
+    {
+      "model": "transformer",
+      "train_time_seconds": 13.266,
+      "inference_latency_ms_per_batch": 0.0194,
+      "parameters": 102091,
+      "macro_f1": 0.08100346293977642,
+      "weighted_f1": 0.5137635851005558,
+      "attack_recall": 0.016923076923076923,
+      "f1_by_class": {
+        "Benign": 0.7870461236506379,
+        "Infiltration": 0.0,
+        "Bot": 0.022988505747126436,
+        "Brute Force -Web": 0.0,
+        "Brute Force -XSS": 0.0,
+        "DoS-Hulk": 0.0,
+        "DoS-Slowloris": 0.0,
+        "DDoS-LOIC-HTTP": 0.0,
+        "DDoS-HOIC": 0.0,
+        "SQL Injection": 0.0,
+        "Heartbleed": 0.0
+      }
+    }
+  ]
+}
