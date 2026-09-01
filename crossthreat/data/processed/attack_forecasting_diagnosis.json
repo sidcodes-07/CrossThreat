@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-09-01T21:04:59.319547",
+  "root_causes": [
+    "Severe class imbalance (89% Benign, 11% Attacks)",
+    "No class weighting in loss function",
+    "Standard CrossEntropyLoss treats all classes equally",
+    "Models naturally predict majority class"
+  ],
+  "baseline_metrics": {
+    "attack_recall": 0.0,
+    "accuracy": 0.9145,
+    "macro_f1": 0.3188
+  },
+  "benign_pct": 88.7125,
+  "attack_pct": 11.287499999999994,
+  "imbalance_ratio": 7.859357696566999,
+  "recommended_fix": "Class-weighted loss + sequence oversampling",
+  "expected_improvement": "15-25% attack recall",
+  "success_threshold": "Attack recall >10%, Macro F1 >0.40"
+}
