@@ -1,0 +1,159 @@
+{
+  "dataset": "CSE-CIC-IDS2018",
+  "total_features": 16,
+  "correlation_analysis": {
+    "redundant_pairs": [
+      {
+        "feature_1": "flow_count",
+        "feature_2": "unique_dst_ports",
+        "correlation": 0.8951893631020683,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "duration_sum",
+        "feature_2": "fwd_pkts_sum",
+        "correlation": 0.8817796577039305,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "duration_sum",
+        "feature_2": "bwd_pkts_sum",
+        "correlation": 0.900022844085952,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "duration_sum",
+        "feature_2": "fwd_bytes_sum",
+        "correlation": 0.9000831753236419,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "duration_sum",
+        "feature_2": "bwd_bytes_sum",
+        "correlation": 0.9029672303362916,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "fwd_pkts_sum",
+        "feature_2": "bwd_pkts_sum",
+        "correlation": 0.9055982421564193,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "fwd_pkts_sum",
+        "feature_2": "fwd_bytes_sum",
+        "correlation": 0.9867860578920199,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "fwd_pkts_sum",
+        "feature_2": "bwd_bytes_sum",
+        "correlation": 0.8947294045317098,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "bwd_pkts_sum",
+        "feature_2": "fwd_bytes_sum",
+        "correlation": 0.9129212097393835,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "bwd_pkts_sum",
+        "feature_2": "bwd_bytes_sum",
+        "correlation": 0.996710960412185,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "fwd_bytes_sum",
+        "feature_2": "bwd_bytes_sum",
+        "correlation": 0.9122861042652958,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      },
+      {
+        "feature_1": "flow_bytes_avg",
+        "feature_2": "flow_pkts_avg",
+        "correlation": 0.8819793334453406,
+        "recommendation": "Consider dropping one of this pair; they convey redundant information"
+      }
+    ],
+    "recommendation": "Drop one feature from each pair; they convey redundant information"
+  },
+  "mutual_information": {
+    "top_10": {
+      "duration_avg": 0.30907276421851915,
+      "fwd_bytes_sum": 0.284169811339148,
+      "duration_sum": 0.2827840639301875,
+      "bwd_pkts_sum": 0.2823548380735852,
+      "bwd_bytes_sum": 0.27972132442427533,
+      "fwd_pkts_sum": 0.26568440121323667,
+      "rst_flag_sum": 0.2187123024054587,
+      "flow_bytes_avg": 0.10694411353014521,
+      "flow_pkts_avg": 0.06996614919413902,
+      "protocol_tcp_ratio": 0.06214670329312688
+    },
+    "explanation": "MI between each feature and attack label; higher = more predictive"
+  },
+  "permutation_importance": {
+    "top_10": {
+      "rst_flag_sum": 0.13319587628865975,
+      "flow_bytes_avg": 0.062010309278350516,
+      "flow_pkts_avg": 0.029845360824742272,
+      "fwd_bytes_sum": 0.000773195876288657,
+      "bwd_pkts_sum": 0.0004123711340206171,
+      "psh_flag_sum": 0.0003092783505154628,
+      "fwd_pkts_sum": 0.00020618556701030856,
+      "unique_dst_ports": 0.0001546391752577314,
+      "flow_count": 5.154639175257714e-05,
+      "duration_avg": 5.154639175257714e-05
+    },
+    "explanation": "Importance computed by permuting feature on held-out test set"
+  },
+  "feature_ranking": {
+    "rst_flag_sum": 0.17595408934705922,
+    "duration_avg": 0.15456215530513587,
+    "fwd_bytes_sum": 0.14247150360771832,
+    "bwd_pkts_sum": 0.1413836046038029,
+    "duration_sum": 0.14136625876921746,
+    "bwd_bytes_sum": 0.13962870344925107,
+    "fwd_pkts_sum": 0.13294529339012348,
+    "flow_bytes_avg": 0.08447721140424787,
+    "flow_pkts_avg": 0.049905755009440646,
+    "protocol_tcp_ratio": 0.030609434120790247
+  },
+  "load_bearing_analysis": {
+    "load_bearing": [
+      "flow_bytes_avg",
+      "fwd_bytes_sum",
+      "psh_flag_sum",
+      "rst_flag_sum"
+    ],
+    "dropable": [
+      "ack_flag_sum",
+      "bwd_bytes_sum",
+      "bwd_pkts_sum",
+      "duration_avg",
+      "duration_sum",
+      "flow_count",
+      "flow_pkts_avg",
+      "fwd_pkts_sum",
+      "protocol_tcp_ratio",
+      "syn_flag_sum",
+      "unique_dst_ips",
+      "unique_dst_ports"
+    ],
+    "load_bearing_count": 4,
+    "dropable_count": 12
+  },
+  "performance_comparison": {
+    "full_model_f1": 0.5826762724729133,
+    "reduced_model_f1": 0.5803876668596426,
+    "features_dropped": 12,
+    "performance_delta": 0.002288605613270711,
+    "delta_percent": 0.39277480848117097,
+    "verdict": "PASS"
+  },
+  "visualizations": [
+    "feature_correlation_heatmap.png",
+    "feature_permutation_importance.png"
+  ]
+}

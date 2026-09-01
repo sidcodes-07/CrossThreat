@@ -1,0 +1,276 @@
+{
+  "dataset": "CSE-CIC-IDS2018",
+  "test_set_note": "Days 8-10 (unseen attack types from training)",
+  "baseline_model": {
+    "type": "Random Forest",
+    "samples_evaluated": 1940,
+    "per_class_metrics": [
+      {
+        "class_name": "Benign",
+        "support": 1240,
+        "precision": 0.797427652733119,
+        "recall": 1.0,
+        "f1": 0.8872987477638641,
+        "sanity_check": "[OK]"
+      },
+      {
+        "class_name": "Infiltration",
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "Bot",
+        "support": 83,
+        "precision": 0.11688311688311688,
+        "recall": 0.5421686746987951,
+        "f1": 0.19230769230769232,
+        "sanity_check": "[OK]"
+      },
+      {
+        "class_name": "Brute Force -Web",
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "Brute Force -XSS",
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "DoS-Hulk",
+        "support": 108,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "DoS-Slowloris",
+        "support": 119,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "DDoS-LOIC-HTTP",
+        "support": 121,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "DDoS-HOIC",
+        "support": 118,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "SQL Injection",
+        "support": 80,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "Heartbleed",
+        "support": 71,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      }
+    ],
+    "low_recall_flags": [
+      {
+        "class": "DoS-Hulk",
+        "recall": 0.0,
+        "support": 108,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "DoS-Slowloris",
+        "recall": 0.0,
+        "support": 119,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "DDoS-LOIC-HTTP",
+        "recall": 0.0,
+        "support": 121,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "DDoS-HOIC",
+        "recall": 0.0,
+        "support": 118,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "SQL Injection",
+        "recall": 0.0,
+        "support": 80,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "Heartbleed",
+        "recall": 0.0,
+        "support": 71,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      }
+    ],
+    "confusion_matrix_path": "confusion_matrix_baseline_random_forest.png"
+  },
+  "temporal_model": {
+    "type": "Mamba State-Space",
+    "samples_evaluated": 1865,
+    "per_class_metrics": [
+      {
+        "class_name": "Benign",
+        "support": 1215,
+        "precision": 0.6535380507343124,
+        "recall": 0.805761316872428,
+        "f1": 0.721710283818651,
+        "sanity_check": "[OK]"
+      },
+      {
+        "class_name": "Infiltration",
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "Bot",
+        "support": 83,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "Brute Force -Web",
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "Brute Force -XSS",
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "DoS-Hulk",
+        "support": 83,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "DoS-Slowloris",
+        "support": 94,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "DDoS-LOIC-HTTP",
+        "support": 121,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "DDoS-HOIC",
+        "support": 118,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "SQL Injection",
+        "support": 80,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      },
+      {
+        "class_name": "Heartbleed",
+        "support": 71,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "sanity_check": "[ALERT] RECALL < 50%"
+      }
+    ],
+    "low_recall_flags": [
+      {
+        "class": "Bot",
+        "recall": 0.0,
+        "support": 83,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "DoS-Hulk",
+        "recall": 0.0,
+        "support": 83,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "DoS-Slowloris",
+        "recall": 0.0,
+        "support": 94,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "DDoS-LOIC-HTTP",
+        "recall": 0.0,
+        "support": 121,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "DDoS-HOIC",
+        "recall": 0.0,
+        "support": 118,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "SQL Injection",
+        "recall": 0.0,
+        "support": 80,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      },
+      {
+        "class": "Heartbleed",
+        "recall": 0.0,
+        "support": 71,
+        "reason": "Low recall indicates poor detection rate for this class; may require feature engineering, class balancing, or retraining"
+      }
+    ],
+    "confusion_matrix_path": "confusion_matrix_temporal_mamba.png"
+  }
+}
