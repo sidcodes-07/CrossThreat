@@ -7,6 +7,7 @@
   "models": [
     {
       "model": "lstm",
+<<<<<<< HEAD
       "train_time_seconds": 3.813,
       "inference_latency_ms_per_batch": 0.0114,
       "parameters": 21707,
@@ -15,6 +16,16 @@
       "attack_recall": 0.013846153846153847,
       "f1_by_class": {
         "Benign": 0.7869281045751634,
+=======
+      "train_time_seconds": 3.812,
+      "inference_latency_ms_per_batch": 0.0133,
+      "parameters": 21707,
+      "macro_f1": 0.08757955991998545,
+      "weighted_f1": 0.5135026743833999,
+      "attack_recall": 0.021538461538461538,
+      "f1_by_class": {
+        "Benign": 0.788216039279869,
+>>>>>>> agents/model-architecture-comparison-ablation
         "Infiltration": 0.0,
         "Bot": 0.0,
         "Brute Force -Web": 0.0,
@@ -29,6 +40,7 @@
     },
     {
       "model": "mamba",
+<<<<<<< HEAD
       "train_time_seconds": 6.108,
       "inference_latency_ms_per_batch": 0.0279,
       "parameters": 14667,
@@ -37,6 +49,16 @@
       "attack_recall": 0.13384615384615384,
       "f1_by_class": {
         "Benign": 0.7443502824858758,
+=======
+      "train_time_seconds": 5.856,
+      "inference_latency_ms_per_batch": 0.0269,
+      "parameters": 14667,
+      "macro_f1": 0.06603149397909223,
+      "weighted_f1": 0.47319620216116226,
+      "attack_recall": 0.17692307692307693,
+      "f1_by_class": {
+        "Benign": 0.7263464337700145,
+>>>>>>> agents/model-architecture-comparison-ablation
         "Infiltration": 0.0,
         "Bot": 0.0,
         "Brute Force -Web": 0.0,
@@ -51,6 +73,7 @@
     },
     {
       "model": "transformer",
+<<<<<<< HEAD
       "train_time_seconds": 14.005,
       "inference_latency_ms_per_batch": 0.0293,
       "parameters": 102091,
@@ -61,6 +84,18 @@
         "Benign": 0.788961038961039,
         "Infiltration": 0.0,
         "Bot": 0.0,
+=======
+      "train_time_seconds": 13.266,
+      "inference_latency_ms_per_batch": 0.0194,
+      "parameters": 102091,
+      "macro_f1": 0.08100346293977642,
+      "weighted_f1": 0.5137635851005558,
+      "attack_recall": 0.016923076923076923,
+      "f1_by_class": {
+        "Benign": 0.7870461236506379,
+        "Infiltration": 0.0,
+        "Bot": 0.022988505747126436,
+>>>>>>> agents/model-architecture-comparison-ablation
         "Brute Force -Web": 0.0,
         "Brute Force -XSS": 0.0,
         "DoS-Hulk": 0.0,

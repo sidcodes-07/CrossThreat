@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-09-01T19:53:37.645110",
+  "dataset_analysis": {
+    "train": {
+      "total_samples": 4569,
+      "benign_samples": 3625,
+      "benign_pct": 20.660976143576274,
+      "attack_samples": 944,
+      "attack_pct": 20.660976143576274,
+      "class_distribution": {
+        "Benign": 3625,
+        "Infiltration": 337,
+        "Brute Force -Web": 240,
+        "Brute Force -XSS": 235,
+        "Bot": 132
+      }
+    },
+    "test": {
+      "total_samples": 1940,
+      "benign_samples": 1240,
+      "benign_pct": 36.08247422680412,
+      "attack_samples": 700,
+      "attack_pct": 36.08247422680412,
+      "class_distribution": {
+        "Benign": 1240,
+        "DDoS-LOIC-HTTP": 121,
+        "DoS-Slowloris": 119,
+        "DDoS-HOIC": 118,
+        "DoS-Hulk": 108,
+        "Bot": 83,
+        "SQL Injection": 80,
+        "Heartbleed": 71
+      }
+    }
+  },
+  "issues": [
+    {
+      "severity": "CRITICAL",
+      "issue": "UNSEEN ATTACK CLASSES IN TEST SET",
+      "description": "Test set contains attack types not present in training. Model cannot predict unseen classes.",
+      "mitigation": "Use time-based split where test attacks differ from train (expected), but accept this limits generalization."
+    }
+  ]
+}

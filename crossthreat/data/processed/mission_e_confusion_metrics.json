@@ -141,9 +141,15 @@
       {
         "class_name": "Benign",
         "support": 1215,
+<<<<<<< HEAD
         "precision": 0.6535380507343124,
         "recall": 0.805761316872428,
         "f1": 0.721710283818651,
+=======
+        "precision": 0.6553365057783821,
+        "recall": 0.7934156378600823,
+        "f1": 0.7177959791511541,
+>>>>>>> agents/model-architecture-comparison-ablation
         "sanity_check": "[OK]"
       },
       {

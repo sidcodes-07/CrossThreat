@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-09-01T20:01:39.556464",
+  "strategy": "Domain Adaptation (Fine-tune on test set)",
+  "train_data": {
+    "samples": 4569,
+    "seen_classes": [
+      "Brute Force -XSS",
+      "Benign",
+      "Brute Force -Web",
+      "Infiltration",
+      "Bot"
+    ],
+    "unseen_classes": [
+      "DDoS-HOIC",
+      "DoS-Slowloris",
+      "DoS-Hulk",
+      "DDoS-LOIC-HTTP",
+      "Heartbleed",
+      "SQL Injection"
+    ]
+  },
+  "finetune_data": {
+    "samples": 1358,
+    "split_pct": 70
+  },
+  "evaluation_data": {
+    "samples": 582,
+    "split_pct": 30
+  },
+  "before_adaptation": {
+    "overall_accuracy": 0.776,
+    "attack_recall_all": 0.177,
+    "attack_recall_seen": 0.4,
+    "attack_recall_unseen": 0.02,
+    "macro_f1": 0.066,
+    "weighted_f1": 0.481
+  },
+  "after_adaptation": {
+    "overall_accuracy": 0.798,
+    "attack_recall_all": 0.285,
+    "attack_recall_seen": 0.52,
+    "attack_recall_unseen": 0.15,
+    "macro_f1": 0.112,
+    "weighted_f1": 0.521
+  },
+  "improvement": {
+    "overall_accuracy_delta": 0.02200000000000002,
+    "attack_recall_delta_all": 0.10799999999999998,
+    "attack_recall_delta_seen": 0.12,
+    "attack_recall_delta_unseen": 0.13,
+    "macro_f1_delta": 0.046,
+    "weighted_f1_delta": 0.040000000000000036
+  }
+}
