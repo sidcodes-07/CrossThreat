@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import './ModelComparisonPanel.css';
 
 interface Model {
@@ -34,7 +34,7 @@ const ModelComparisonPanel: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/models/comparison');
+        const response = await fetch('http://localhost:8000/api/models/comparison');
         if (!response.ok) {
           throw new Error(`Failed to fetch model comparison: ${response.statusText}`);
         }

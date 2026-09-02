@@ -1,0 +1,33 @@
+{
+  "feature_cols": [
+    "flow_count",
+    "duration_sum",
+    "duration_avg",
+    "fwd_pkts_sum",
+    "bwd_pkts_sum",
+    "fwd_bytes_sum",
+    "bwd_bytes_sum",
+    "flow_bytes_avg",
+    "flow_pkts_avg",
+    "syn_flag_sum",
+    "ack_flag_sum",
+    "psh_flag_sum",
+    "rst_flag_sum",
+    "unique_dst_ips",
+    "unique_dst_ports",
+    "protocol_tcp_ratio"
+  ],
+  "label_mapping": {
+    "Benign": 0,
+    "Infiltration": 1,
+    "Bot": 2,
+    "Brute Force -Web": 3,
+    "Brute Force -XSS": 4,
+    "DoS-Hulk": 5,
+    "DoS-Slowloris": 6,
+    "DDoS-LOIC-HTTP": 7,
+    "DDoS-HOIC": 8,
+    "SQL Injection": 9,
+    "Heartbleed": 10
+  }
+}

@@ -2,17 +2,12 @@
   "dataset": "CSE-CIC-IDS2018",
   "test_set": "Days 8-10 (CIC-IDS2018 official attack schedule)",
   "samples_scanned": 100,
-<<<<<<< HEAD
-  "correct_predictions": 44,
-  "correct_rate": 0.44,
-=======
   "correct_predictions": 43,
   "correct_rate": 0.43,
->>>>>>> agents/model-architecture-comparison-ablation
   "attack_predictions_matched": 0,
   "attack_predictions_with_doc": 0,
   "correspondence_rate": 0.0,
   "sample_matches": [],
   "full_log_size": 100,
-  "note": "Correspondence check validates that model predictions (attack type, timestamp) align with official CIC-IDS2018 attack documentation."
+  "note": "Correspondence check validates that model predictions align with the official CIC-IDS2018 attack documentation and timing windows."
 }

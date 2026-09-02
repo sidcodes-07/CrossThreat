@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import './DevelopmentProgressPanel.css';
 
 interface Mission {
@@ -30,7 +30,7 @@ const DevelopmentProgressPanel: React.FC = () => {
   useEffect(() => {
     const fetchMissions = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/missions/summary');
+        const response = await fetch('http://localhost:8000/api/missions/summary');
         if (!response.ok) {
           throw new Error(`Failed to fetch missions: ${response.statusText}`);
         }
@@ -58,7 +58,7 @@ const DevelopmentProgressPanel: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/missions/${missionId}/details`);
+      const response = await fetch(`http://localhost:8000/api/missions/${missionId}/details`);
       if (!response.ok) {
         throw new Error(`Failed to fetch mission details: ${response.statusText}`);
       }

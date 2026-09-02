@@ -78,7 +78,7 @@ OOD Set (CIC-IDS2017):
 
 ### Architecture
 ```
-Input:  [batch_size, seq_len=5, n_features=12]
+Input:  [batch_size, seq_len=5, n_features=16]
   ↓
 LSTM:   (32 hidden units, Focal Loss, class-weighted)
   ↓
@@ -89,25 +89,31 @@ Performance: 80.55% attack recall ✓
 
 ## Backend Infrastructure
 
-### Flask API Server (8 endpoints)
+### FastAPI API Server (single active backend)
 ```bash
-python engines/server.py  # Runs on localhost:5000
+cd C:\CyberShield\crossthreat\engines
+python server.py
 ```
+
+This is the only active backend entry point. The app listens on port 8000 and serves all dashboard and replay APIs through a single FastAPI application.
 
 Endpoints:
 - `GET /api/health` - Health check
+- `GET /api/generalization` - OOD/generalization metrics
+- `GET /api/replay/list` - Host list for replay
+- `GET /api/replay/host/{host_ip}` - Chronological host replay and evidence
 - `GET /api/models/comparison` - Model cards + metrics
 - `GET /api/evaluation/confusion-matrix` - Test & OOD matrices
 - `GET /api/evaluation/per-class` - Per-class precision/recall/F1
 - `GET /api/verification/ground-truth` - Verification samples
-- `GET /api/missions/summary` - All 6 missions (D-I)
+- `GET /api/missions/summary` - Mission summary data
 - `GET /api/missions/{id}/details` - Detailed mission results
 - `GET /api/ood/results` - OOD evaluation metrics
 
 **Features:**
+- Single active FastAPI backend
 - No raw file paths exposed to frontend
-- All data loaded server-side
-- Clean structured JSON responses
+- Canonical 16-feature schema enforced at startup
 - CORS enabled for frontend
 
 ## Frontend Components
@@ -128,7 +134,7 @@ Endpoints:
 - `engines/data_pipeline.py` - Data loading + temporal windowing
 - `engines/attack_forecasting_fix_v3.py` - Focal Loss LSTM (RECOMMENDED)
 - `engines/comprehensive_evaluation.py` - Full evaluation pipeline
-- `engines/server.py` - Flask backend with 8 API endpoints
+- `engines/server.py` - FastAPI backend with all CrossThreat routes
 
 ### Frontend
 - `frontend/components/ModelComparisonPanel.tsx` + CSS
@@ -175,20 +181,8 @@ Endpoints:
 
 ### Quick Start
 ```bash
-# Generate datasets
-python engines/data_pipeline.py
-
-# Train final model
-python engines/attack_forecasting_fix_v3.py
-
-# Run evaluation
-python engines/comprehensive_evaluation.py
-
-# Start backend
-python engines/server.py
-
-# Generate report
-python scripts/generate_final_report.py
+cd C:\CyberShield\crossthreat\engines
+python server.py
 ```
 
 ### Verification

@@ -32,7 +32,7 @@
 
 ### Architecture
 ```
-Input:  [batch_size, seq_len=5, n_features=12]
+Input:  [batch_size, seq_len=5, n_features=16]
 LSTM:   32 hidden units + Focal Loss
 Output: 11 classes (Benign + 10 attack types)
 Training: 15,925 temporal windows, 37.7 seconds
@@ -41,9 +41,12 @@ Training: 15,925 temporal windows, 37.7 seconds
 ## Deliverables
 
 ### Backend Infrastructure
-- **Server:** Flask API with 8 endpoints
+- **Server:** Single FastAPI backend (`engines/server.py`)
 - **Endpoints:**
   - `/api/health` - Health check
+  - `/api/generalization` - OOD/generalization metrics
+  - `/api/replay/list` - Replay host list
+  - `/api/replay/host/{host_ip}` - Time-ordered host replay and evidence
   - `/api/models/comparison` - Model cards + metrics
   - `/api/evaluation/confusion-matrix` - Test & OOD matrices
   - `/api/evaluation/per-class` - Per-class precision/recall/F1
@@ -65,7 +68,7 @@ Training: 15,925 temporal windows, 37.7 seconds
 - **ATTACK_FORECASTING_FIX_REPORT.md:** Technical analysis
 
 ### Code Artifacts
-- `engines/server.py` (424 lines) - Flask backend
+- `engines/server.py` (424 lines) - FastAPI backend
 - `engines/comprehensive_evaluation.py` (300+ lines) - Full evaluation
 - `engines/attack_forecasting_fix_v3.py` (396 lines) - Recommended model
 - `frontend/components/ModelComparisonPanel.tsx` - React component
@@ -98,11 +101,8 @@ Training: 15,925 temporal windows, 37.7 seconds
 
 ### Quick Start
 ```bash
-python engines/data_pipeline.py              # Generate datasets
-python engines/attack_forecasting_fix_v3.py  # Train model
-python engines/comprehensive_evaluation.py   # Run evaluation
-python engines/server.py                     # Start backend
-python scripts/generate_final_report.py      # Generate report
+cd C:\CyberShield\crossthreat\engines
+python server.py
 ```
 
 ### Verification
@@ -127,7 +127,7 @@ python scripts/generate_final_report.py      # Generate report
 - **Split:** 80% train (15,925), 20% test (3,925)
 - **OOD:** CIC-IDS2017 (2,925 flows)
 - **Sequence Length:** 5 timesteps per sample
-- **Features:** 12 network flow attributes
+- **Features:** 16 canonical network flow attributes
 - **Temporal Window:** INPUT=[t-5..t-1], TARGET=label(t)
 - **No Leakage:** Verified train/test chronological ordering
 

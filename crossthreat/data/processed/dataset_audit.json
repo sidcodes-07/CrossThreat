@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-09-01T20:41:16.468675",
+  "total_rows": 23000,
+  "total_files": 11,
+  "attack_labels": [
+    "Benign",
+    "Bot",
+    "Brute Force -Web",
+    "Brute Force -XSS",
+    "DDoS-HOIC",
+    "DDoS-LOIC-HTTP",
+    "DoS-Hulk",
+    "DoS-Slowloris",
+    "Heartbleed",
+    "Infiltration",
+    "PortScan",
+    "SQL Injection",
+    "Web Attack - Brute Force"
+  ],
+  "files": {
+    "CIC-IDS2017.csv": {
+      "rows": 3000,
+      "columns": 17
+    },
+    "Friday-02-03-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Friday-16-02-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Friday-23-02-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Thursday-01-03-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Thursday-15-02-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Thursday-22-02-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Tuesday-20-02-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Wednesday-14-02-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Wednesday-21-02-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    },
+    "Wednesday-28-02-2018.csv": {
+      "rows": 2000,
+      "columns": 17
+    }
+  }
+}

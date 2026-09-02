@@ -149,9 +149,9 @@ This naturally addresses class imbalance without artificially amplifying attacks
 
 ### LSTM Architecture
 ```
-Input:  [batch_size, seq_len=5, n_features=12]
+Input:  [batch_size, seq_len=5, n_features=16]
   ↓
-Embedding: (12 → 32 features through first dense layer)
+Embedding: (16 → 32 features through first dense layer)
   ↓
 LSTM Layer: (32 hidden units)
   ↓
@@ -406,7 +406,7 @@ This honest assessment ensures stakeholders understand both capabilities and lim
 ### B. File Locations
 - Models: `engines/attack_forecasting_fix_v3.py`
 - Data: `data/processed/mission_e_comprehensive_evaluation.json`
-- API: `engines/server.py` (Flask backend)
+- API: `engines/server.py` (FastAPI backend)
 - Frontend: `frontend/components/ModelComparisonPanel.tsx`
 
 ### C. Citation & References

@@ -1,0 +1,206 @@
+
+================================================================================
+CROSSTHREAT DATA PIPELINE - REAL CIC-IDS2018
+================================================================================
+Start time: 2026-09-01 20:49:49.909315
+
+================================================================================
+LOADING REAL CIC-IDS2018 DATASET
+================================================================================
+Data directory: C:\CyberShield\crossthreat\data
+Looking in: C:\CyberShield\crossthreat\data\raw
+[OK] Thursday-15-02-2018.csv               2000 rows
+[OK] Wednesday-14-02-2018.csv              2000 rows
+[OK] Thursday-22-02-2018.csv               2000 rows
+[OK] Wednesday-21-02-2018.csv              2000 rows
+[OK] Thursday-01-03-2018.csv               2000 rows
+[OK] Friday-02-03-2018.csv                 2000 rows
+[OK] Wednesday-28-02-2018.csv              2000 rows
+[OK] Tuesday-20-02-2018.csv                2000 rows
+[OK] Friday-16-02-2018.csv                 2000 rows
+[OK] Friday-23-02-2018.csv                 2000 rows
+
+Total rows loaded: 20,000
+Total files loaded: 10
+
+Final dataset shape: (20000, 17)
+
+================================================================================
+LOADING OOD DATASET (CIC-IDS2017)
+================================================================================
+[OK] CIC-IDS2017.csv loaded: 3000 rows
+
+================================================================================
+COLUMN ANALYSIS
+================================================================================
+
+Columns (17):
+
+Identified columns:
+  Label columns: ['Label']
+  Timestamp columns: ['Timestamp']
+  IP/Host columns: ['Src IP', 'Dst IP', 'Dst Port']
+  Feature columns (numeric): 12 features
+    ['Protocol', 'Flow Duration', 'Tot Fwd Pkts', 'Tot Bwd Pkts', 'TotLen Fwd Pkts', 'TotLen Bwd Pkts', 'Flow Byts/s', 'Flow Pkts/s', 'SYN Flag Cnt', 'ACK Flag Cnt', 'PSH Flag Cnt', 'RST Flag Cnt']
+
+Class distribution (Label):
+  Benign                            17865 ( 89.33%)
+  Infiltration                        423 (  2.12%)
+  Brute Force -Web                    322 (  1.61%)
+  Brute Force -XSS                    312 (  1.56%)
+  Bot                                 266 (  1.33%)
+  DDoS-HOIC                           162 (  0.81%)
+  DoS-Slowloris                       156 (  0.78%)
+  DDoS-LOIC-HTTP                      155 (  0.78%)
+  DoS-Hulk                            142 (  0.71%)
+  Heartbleed                          100 (  0.50%)
+  SQL Injection                        97 (  0.48%)
+
+================================================================================
+CREATING CHRONOLOGICAL 80/20 SPLIT
+================================================================================
+
+Total samples: 20,000
+Train samples: 16,000 (80.0%)
+Test samples:  4,000 (20.0%)
+
+Split verification:
+  Train index range: 0 to 15999
+  Test index range:  16000 to 19999
+  No overlap: True
+
+================================================================================
+PREPROCESSING FEATURES
+================================================================================
+
+Features to preprocess: 12
+
+Replacing infinity values with NaN:
+  train: 75 infinity values
+  test: 19 infinity values
+
+Missing values (train):
+  {'Flow Duration': 80, 'Flow Byts/s': 75}
+Missing values (test):
+  {'Flow Duration': 28, 'Flow Byts/s': 19}
+
+Normalizing features (fit on TRAINING data only):
+  Scaler fit on 16000 training samples
+  Applied to 4000 test samples
+
+================================================================================
+ENCODING LABELS
+================================================================================
+
+Label encoder fit on 11 classes from training data:
+  0: Benign
+  1: Bot
+  2: Brute Force -Web
+  3: Brute Force -XSS
+  4: DDoS-HOIC
+  5: DDoS-LOIC-HTTP
+  6: DoS-Hulk
+  7: DoS-Slowloris
+  8: Heartbleed
+  9: Infiltration
+  10: SQL Injection
+
+Class distribution after encoding:
+  Train: 11 classes
+  Test: 3 classes
+  OOD: 3 classes
+
+================================================================================
+CREATING TEMPORAL WINDOWS
+================================================================================
+
+Sequence length: 5
+  Grouping by Src IP: 15 hosts
+  Windows created: 15925
+  Input shape: (15925, 5, 12)
+  Target shape: (15925,)
+
+Sequence length: 10
+  Grouping by Src IP: 15 hosts
+  Windows created: 15850
+  Input shape: (15850, 10, 12)
+  Target shape: (15850,)
+
+Sequence length: 15
+  Grouping by Src IP: 15 hosts
+  Windows created: 15775
+  Input shape: (15775, 15, 12)
+  Target shape: (15775,)
+
+================================================================================
+CREATING TEMPORAL WINDOWS
+================================================================================
+
+Sequence length: 5
+  Grouping by Src IP: 15 hosts
+  Windows created: 3925
+  Input shape: (3925, 5, 12)
+  Target shape: (3925,)
+
+Sequence length: 10
+  Grouping by Src IP: 15 hosts
+  Windows created: 3850
+  Input shape: (3850, 10, 12)
+  Target shape: (3850,)
+
+Sequence length: 15
+  Grouping by Src IP: 15 hosts
+  Windows created: 3775
+  Input shape: (3775, 15, 12)
+  Target shape: (3775,)
+
+================================================================================
+CREATING TEMPORAL WINDOWS
+================================================================================
+
+Sequence length: 5
+  Grouping by Src IP: 15 hosts
+  Windows created: 2925
+  Input shape: (2925, 5, 12)
+  Target shape: (2925,)
+
+Sequence length: 10
+  Grouping by Src IP: 15 hosts
+  Windows created: 2850
+  Input shape: (2850, 10, 12)
+  Target shape: (2850,)
+
+Sequence length: 15
+  Grouping by Src IP: 15 hosts
+  Windows created: 2775
+  Input shape: (2775, 15, 12)
+  Target shape: (2775,)
+
+================================================================================
+LEAKAGE VERIFICATION
+================================================================================
+Index overlap: False
+Train feature mean: 0.0000
+Test feature mean: -0.0936
+Label class overlap: 3 classes
+[OK] No index overlap detected
+
+================================================================================
+SAVING ARTIFACTS
+================================================================================
+[OK] train_df.pkl
+[OK] test_df.pkl
+[OK] ood_df.pkl
+[OK] scaler.pkl
+[OK] encoder.pkl
+[OK] label_map.pkl
+[OK] train_seq5_windows.npz
+[OK] train_seq10_windows.npz
+[OK] train_seq15_windows.npz
+[OK] test_seq5_windows.npz
+[OK] test_seq10_windows.npz
+[OK] test_seq15_windows.npz
+[OK] ood_seq5_windows.npz
+[OK] ood_seq10_windows.npz
+[OK] ood_seq15_windows.npz
+[OK] metadata.json

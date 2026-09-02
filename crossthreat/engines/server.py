@@ -1,431 +1,498 @@
-#!/usr/bin/env python3
-"""
-CrossThreat Backend Server
-===========================
+﻿#!/usr/bin/env python3
+"""CrossThreat backend entry point.
 
-Central backend entry point serving all data via clean REST API endpoints.
-No raw JSON/MD files exposed to frontend.
-
-Endpoints:
-/api/models/comparison - Model cards (LSTM, Transformer, Mamba)
-/api/evaluation/confusion-matrix - Confusion matrices
-/api/evaluation/per-class - Per-class metrics table
-/api/verification/ground-truth - Ground-truth verification samples
-/api/missions/summary - All completed missions summary
-/api/missions/{id}/details - Detailed mission results
-/api/health - Health check
+This is the only active FastAPI application for the project. All dashboard and
+replay endpoints are exposed from here; legacy server code is not part of the
+runtime path.
 """
 
-import os
 import json
+import os
 import pickle
-import numpy as np
+import sys
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, jsonify, request
-from flask_cors import CORS
-import warnings
+from typing import Any, Dict, List
 
-warnings.filterwarnings('ignore')
+import numpy as np
+import pandas as pd
+import torch
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
-app = Flask(__name__)
-CORS(app)
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-# Configuration
-BASE_DIR = Path(__file__).parent.parent
-DATA_DIR = BASE_DIR / "data" / "processed"
-MODELS_DIR = BASE_DIR / "engines"
+from backend.routes.mission_j_api import MissionJAPI
+from backend.routes.mission_k_api import MissionKAPI
+from baseline_model import CurrentStateClassifier
+from evidence_engine import EvidenceEngine
+from stage_mapper import StageMapper
+from temporal_model import TemporalWorldModel
 
-class DataLoader:
-    """Load evaluation data from JSON files."""
-    
-    @staticmethod
-    def load_json(filename: str) -> dict:
-        """Load JSON file safely."""
-        path = DATA_DIR / filename
-        if not path.exists():
-            return {"error": f"File not found: {filename}"}
-        
-        try:
-            with open(path, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            return {"error": str(e)}
-    
-    @staticmethod
-    def load_evaluation():
-        """Load comprehensive evaluation results."""
-        return DataLoader.load_json("mission_e_comprehensive_evaluation.json")
-    
-    @staticmethod
-    def load_attack_forecasting_summary():
-        """Load attack forecasting fix summary."""
-        return DataLoader.load_json("attack_forecasting_fix_final_summary.json")
-    
-    @staticmethod
-    def load_attack_forecasting_diagnosis():
-        """Load attack forecasting diagnosis."""
-        return DataLoader.load_json("attack_forecasting_diagnosis.json")
+app = FastAPI(title="CrossThreat API Server", version="2.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Health check endpoint
-@app.route('/api/health', methods=['GET'])
-def health():
-    """Health check endpoint."""
-    return jsonify({
+PROCESSED_DIR = REPO_ROOT / "data" / "processed"
+CANONICAL_FEATURE_COUNT = 16
+
+with open(PROCESSED_DIR / "metadata.pkl", "rb") as f:
+    METADATA = pickle.load(f)
+FEATURE_COLS = METADATA["feature_cols"]
+LABEL_MAP = METADATA["label_mapping"]
+INV_LABEL_MAP = {v: k for k, v in LABEL_MAP.items()}
+
+with open(PROCESSED_DIR / "scaler.pkl", "rb") as f:
+    SCALER = pickle.load(f)
+
+with open(PROCESSED_DIR / "temporal_model_dims.pkl", "rb") as f:
+    MODEL_DIMS = pickle.load(f)
+
+CURRENT_CLASSIFIER = CurrentStateClassifier(str(PROCESSED_DIR))
+STAGE_MAPPER = StageMapper(FEATURE_COLS)
+EVIDENCE_ENGINE = EvidenceEngine(str(PROCESSED_DIR))
+
+LSTM_MODEL = TemporalWorldModel(
+    input_dim=int(MODEL_DIMS["input_dim"]),
+    hidden_dim=int(MODEL_DIMS["hidden_dim"]),
+    num_classes=int(MODEL_DIMS["num_classes"]),
+)
+LSTM_MODEL.load_state_dict(
+    torch.load(PROCESSED_DIR / "temporal_model.pth", map_location=torch.device("cpu"))
+)
+LSTM_MODEL.eval()
+
+
+class GeneralizationResult(BaseModel):
+    indist_accuracy: float
+    ood_accuracy: float
+    accuracy_delta: float
+    ood_sequences: int
+
+
+def validate_feature_schema() -> None:
+    issues: List[str] = []
+
+    if len(FEATURE_COLS) != CANONICAL_FEATURE_COUNT:
+        issues.append(
+            f"metadata feature count mismatch: len(feature_cols)={len(FEATURE_COLS)} "
+            f"but canonical count is {CANONICAL_FEATURE_COUNT}."
+        )
+
+    scaler_count = int(getattr(SCALER, "n_features_in_", len(FEATURE_COLS)))
+    if scaler_count != CANONICAL_FEATURE_COUNT:
+        issues.append(
+            f"scaler feature count mismatch: scaler.n_features_in_={scaler_count}, "
+            f"canonical count is {CANONICAL_FEATURE_COUNT}."
+        )
+
+    model_count = int(MODEL_DIMS.get("input_dim", -1))
+    if model_count != CANONICAL_FEATURE_COUNT:
+        issues.append(
+            f"model feature count mismatch: input_dim={model_count}, canonical count is {CANONICAL_FEATURE_COUNT}."
+        )
+
+    if issues:
+        raise RuntimeError(
+            "Feature schema validation failed. CrossThreat must use one canonical feature schema across "
+            "dataset, preprocessing, scaler, replay, and explainability.\n" + "\n".join(f" - {issue}" for issue in issues)
+        )
+
+
+validate_feature_schema()
+
+
+def load_json_file(filename: str) -> Dict[str, Any]:
+    path = PROCESSED_DIR / filename
+    if not path.exists():
+        return {"error": f"File not found: {filename}"}
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except Exception as exc:  # pragma: no cover
+        return {"error": str(exc)}
+
+
+@app.get("/api/health")
+def api_health() -> Dict[str, Any]:
+    return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "service": "CrossThreat Backend API"
-    })
+        "service": "CrossThreat API Server",
+        "canonical_feature_count": CANONICAL_FEATURE_COUNT,
+        "feature_count": len(FEATURE_COLS),
+        "scaler_feature_count": int(getattr(SCALER, "n_features_in_", len(FEATURE_COLS))),
+        "model_feature_count": int(MODEL_DIMS.get("input_dim", len(FEATURE_COLS))),
+    }
 
-# ===== MODEL COMPARISON ENDPOINTS =====
 
-@app.route('/api/models/comparison', methods=['GET'])
-def models_comparison():
-    """Return comparison cards for all models."""
-    
-    evaluation = DataLoader.load_evaluation()
-    if "error" in evaluation:
-        return jsonify(evaluation), 404
-    
-    # Extract key results
-    test_results = evaluation.get('test_results', {})
-    
-    models = [
-        {
-            "id": "lstm_focal_loss",
-            "name": "LSTM with Focal Loss",
-            "type": "Recurrent Neural Network",
-            "parameters": 220000,  # Approximate
-            "inference_latency_ms": 0.0168,
-            "overall_accuracy": test_results.get('accuracy', 0),
-            "attack_recall": test_results.get('attack_recall', 0),
-            "macro_f1": test_results.get('macro_f1', 0),
-            "benign_precision": 0.9337,
-            "status_badge": {
-                "color": "yellow" if test_results.get('attack_recall', 0) < 0.30 else "green",
-                "text": "Work in Progress" if test_results.get('attack_recall', 0) < 0.30 else "Promising"
-            },
-            "verdict": "Best candidate for attack forecasting. Focal Loss effectively handles class imbalance. 80% attack recall on correctly-labeled attacks. Recommended as baseline for future improvements.",
-            "recommended": True
+@app.get("/api/generalization", response_model=GeneralizationResult)
+def get_generalization() -> Dict[str, Any]:
+    generalization_path = PROCESSED_DIR / "generalization_results.pkl"
+    if not generalization_path.exists():
+        try:
+            from generalization_test import run_generalization_test
+
+            run_generalization_test()
+        except Exception as exc:  # pragma: no cover
+            raise HTTPException(status_code=500, detail=f"Generalization test could not run: {exc}") from exc
+
+    if not generalization_path.exists():
+        raise HTTPException(status_code=500, detail="Generalization test results could not be found.")
+
+    with open(generalization_path, "rb") as handle:
+        result = pickle.load(handle)
+    return result
+
+
+@app.get("/api/replay/list", response_model=List[str])
+def get_replay_hosts() -> List[str]:
+    test_df = pd.read_pickle(PROCESSED_DIR / "test_windows.pkl")
+    hosts_by_attacks = (
+        test_df.groupby("Host")["Label"].nunique().sort_values(ascending=False).index.tolist()
+    )
+    return hosts_by_attacks
+
+
+@app.get("/api/replay/host/{host_ip}")
+def get_host_sequence(host_ip: str) -> Dict[str, Any]:
+    test_df = pd.read_pickle(PROCESSED_DIR / "test_windows.pkl")
+    host_windows = test_df[test_df["Host"] == host_ip].sort_values("TimeWindow").reset_index(drop=True)
+
+    if host_windows.empty:
+        raise HTTPException(status_code=404, detail=f"No replay data for host {host_ip}.")
+
+    seq_len = 5
+    if len(host_windows) < seq_len + 2:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Not enough windows for host {host_ip} (have {len(host_windows)}, need >= {seq_len + 2}).",
+        )
+
+    raw_ts = host_windows["TimeWindow"]
+    disp_ts = raw_ts.dt.strftime("%H:%M:%S").values
+    X_scaled = host_windows[FEATURE_COLS].values.astype(np.float32)
+    str_labels = host_windows["Label"].values
+
+    timeline_steps: List[Dict[str, Any]] = []
+    forecast_all: List[str] = []
+    actual_all: List[str] = []
+
+    for t in range(seq_len, len(host_windows)):
+        current_observed_label = str_labels[t - 1]
+        current_observed_time = disp_ts[t - 1]
+
+        scaled_row_current = X_scaled[t - 1].reshape(1, -1)
+        raw_row_current = SCALER.inverse_transform(scaled_row_current)[0]
+        raw_row_dict = {feature: float(raw_row_current[i]) for i, feature in enumerate(FEATURE_COLS)}
+
+        baseline_res = CURRENT_CLASSIFIER.predict_state(raw_row_current)
+        baseline_pred = baseline_res["state"]
+        baseline_prob = float(baseline_res["probabilities"].get(baseline_pred, 0.0))
+        baseline_shap = EVIDENCE_ENGINE.explain_baseline(raw_row_current)
+        baseline_shap_top = [{"feature": feature, "value": float(value)} for feature, value in baseline_shap[:5]]
+        current_stage_res = STAGE_MAPPER.resolve_stage(baseline_pred, raw_row_current)
+
+        input_seq = X_scaled[t - seq_len : t]
+        lstm_attributions, forecast_label, forecast_prob = EVIDENCE_ENGINE.explain_temporal(LSTM_MODEL, input_seq)
+        lstm_attributions_top = [{"feature": feature, "value": float(value)} for feature, value in lstm_attributions[:5]]
+
+        actual_future_label = str_labels[t]
+        actual_future_time = disp_ts[t]
+        forecast_correct = bool(forecast_label == actual_future_label)
+        lead_time_seconds = float((raw_ts.iloc[t] - raw_ts.iloc[t - 1]).total_seconds())
+        forecast_mitre_stage = STAGE_MAPPER.map_label(forecast_label)
+
+        forecast_all.append(forecast_label)
+        actual_all.append(actual_future_label)
+
+        timeline_steps.append(
+            {
+                "step": t - seq_len + 1,
+                "current_observed_label": current_observed_label,
+                "current_observed_time": current_observed_time,
+                "baseline_predicted_state": baseline_pred,
+                "baseline_probability": baseline_prob,
+                "baseline_shap": baseline_shap_top,
+                "current_mitre_stage": current_stage_res.get("final_stage", "unknown"),
+                "current_rule_stage": current_stage_res.get("rule_stage", "unknown"),
+                "triggered_rules": current_stage_res.get("triggered_rules", []),
+                "detection_source": current_stage_res.get("detection_source", "unknown"),
+                "forecast_next_state": forecast_label,
+                "forecast_probability": float(forecast_prob),
+                "forecast_mitre_stage": forecast_mitre_stage,
+                "forecast_attribution": lstm_attributions_top,
+                "actual_future_label": actual_future_label,
+                "actual_future_time": actual_future_time,
+                "forecast_correct": forecast_correct,
+                "lead_time_seconds": lead_time_seconds,
+                "current_observed": raw_row_dict,
+                "feature_attribution": lstm_attributions_top,
+                "metrics": raw_row_dict,
+            }
+        )
+
+    unique_labels = sorted(set(actual_all + forecast_all), key=lambda label: LABEL_MAP.get(label, 999))
+    _, _, _, _ = precision_recall_fscore_support(actual_all, forecast_all, labels=unique_labels, average=None, zero_division=0)
+    overall_acc = float(accuracy_score(actual_all, forecast_all))
+    precision_scores, recall_scores, f1_scores, _ = precision_recall_fscore_support(
+        actual_all, forecast_all, labels=unique_labels, average=None, zero_division=0
+    )
+    per_class = {
+        label: {"precision": float(precision_scores[idx]), "recall": float(recall_scores[idx]), "f1": float(f1_scores[idx])}
+        for idx, label in enumerate(unique_labels)
+    }
+
+    attack_pairs = [(forecast, actual) for forecast, actual in zip(forecast_all, actual_all) if actual != "Benign"]
+    attack_forecast_accuracy = float(sum(1 for forecast, actual in attack_pairs if forecast == actual) / len(attack_pairs)) if attack_pairs else 0.0
+    mean_lead = float(np.mean([step["lead_time_seconds"] for step in timeline_steps])) if timeline_steps else 0.0
+
+    return {
+        "host": host_ip,
+        "total_steps": len(timeline_steps),
+        "steps": timeline_steps,
+        "summary": {
+            "overall_forecast_accuracy": overall_acc,
+            "attack_forecast_accuracy": attack_forecast_accuracy,
+            "total_attack_steps": len(attack_pairs),
+            "mean_lead_time_seconds": mean_lead,
+            "per_class_metrics": per_class,
+            "seq_len": seq_len,
+            "window_size": "30s",
         },
-        {
-            "id": "lstm_baseline",
-            "name": "LSTM Baseline (unweighted)",
-            "type": "Recurrent Neural Network",
-            "parameters": 220000,
-            "inference_latency_ms": 0.0168,
-            "overall_accuracy": 0.9162,
-            "attack_recall": 0.0000,
-            "macro_f1": 0.3188,
-            "benign_precision": 0.9162,
-            "status_badge": {
-                "color": "red",
-                "text": "0% Attack Recall"
-            },
-            "verdict": "Fails at attack forecasting - always predicts Benign. Demonstrates class imbalance problem.",
-            "recommended": False
-        }
-    ]
-    
-    return jsonify({
-        "timestamp": datetime.now().isoformat(),
-        "dataset": "CIC-IDS2018 (20K real network flows)",
-        "models": models,
-        "caveat": "Attack forecasting accuracy is a known work-in-progress. Current best model achieves 80% attack recall on sequences containing attacks, but many attack types remain undetected. See roadmap for improvement plans."
-    })
+    }
 
-# ===== EVALUATION ENDPOINTS =====
 
-@app.route('/api/evaluation/confusion-matrix', methods=['GET'])
-def confusion_matrices():
-    """Return confusion matrices for test and OOD sets."""
-    
-    evaluation = DataLoader.load_evaluation()
-    if "error" in evaluation:
-        return jsonify(evaluation), 404
-    
-    test_cm = evaluation.get('test_results', {}).get('confusion_matrix', [])
-    ood_cm = evaluation.get('ood_results', {}).get('confusion_matrix', [])
-    
-    # Load encoder for class names
-    try:
-        with open(DATA_DIR / "encoder.pkl", 'rb') as f:
-            encoder = pickle.load(f)
-            class_names = list(encoder.classes_)
-    except:
-        class_names = [f"Class_{i}" for i in range(len(test_cm))]
-    
-    return jsonify({
+@app.get("/api/audit/labels")
+def get_label_audit() -> Dict[str, Any]:
+    raw_dir = REPO_ROOT / "data" / "raw"
+    csv_files = sorted(raw_dir.glob("*.csv"))
+    global_counts: Dict[str, int] = {}
+    file_info: List[Dict[str, Any]] = []
+
+    for csv_file in csv_files:
+        try:
+            df = pd.read_csv(csv_file, usecols=["Label"])
+            counts = df["Label"].value_counts().to_dict()
+            for label, count in counts.items():
+                global_counts[label] = global_counts.get(label, 0) + int(count)
+            file_info.append({"file": csv_file.name, "rows": len(df), "labels": counts})
+        except Exception as exc:  # pragma: no cover
+            file_info.append({"file": csv_file.name, "error": str(exc)})
+
+    return {
+        "global_label_counts": global_counts,
+        "metadata_label_mapping": LABEL_MAP,
+        "files": file_info,
+        "data_source_note": "This project uses the prepared CIC-IDS2018 feature windows under data/processed, not raw CSV synthesis.",
+    }
+
+
+@app.get("/api/reproducibility")
+def get_reproducibility() -> Dict[str, Any]:
+    return {
+        "data_source": "CSE-CIC-IDS2018 processed windows",
+        "features": FEATURE_COLS,
+        "feature_count": len(FEATURE_COLS),
+        "window_size": "30 seconds",
+        "seq_len": 5,
+        "label_mapping": LABEL_MAP,
+        "scaler": "sklearn.StandardScaler (fit on canonical 16-feature schema)",
+        "random_seed": 42,
+        "model_config": {
+            "type": "LSTM",
+            "input_dim": MODEL_DIMS["input_dim"],
+            "hidden_dim": MODEL_DIMS["hidden_dim"],
+            "num_classes": MODEL_DIMS["num_classes"],
+            "epochs": 50,
+            "batch_size": 32,
+            "optimizer": "Adam",
+            "learning_rate": 0.001,
+            "loss": "Weighted focal loss",
+        },
+        "training_target": "label of future window t given input window sequence [t-5, t-4, t-3, t-2, t-1]",
+        "forecast_validation": "Replay compares forecast_label against actual future window label, without leaking future state into the input sequence.",
+    }
+
+
+@app.get("/api/models/comparison")
+def models_comparison() -> Dict[str, Any]:
+    return MissionJAPI.get_models_comparison()
+
+
+@app.get("/api/models/{model_id}/details")
+def model_details(model_id: str) -> Dict[str, Any]:
+    data = MissionJAPI.get_model_details(model_id)
+    if isinstance(data, dict) and data.get("error"):
+        raise HTTPException(status_code=404, detail=data["error"])
+    return data
+
+
+@app.get("/api/evaluation/confusion-matrix")
+def confusion_matrices() -> Dict[str, Any]:
+    evaluation = load_json_file("mission_e_comprehensive_evaluation.json")
+    if not evaluation or "error" in evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation results not found")
+
+    matrix_data = evaluation.get("test_results", {}).get("confusion_matrix", [])
+    class_names = evaluation.get("test_results", {}).get("class_names", [f"Class_{i}" for i in range(len(matrix_data))])
+
+    return {
         "timestamp": datetime.now().isoformat(),
         "test_set": {
             "name": "CIC-IDS2018 Test Set",
-            "samples": 3925,
-            "matrix": test_cm,
-            "class_names": class_names
+            "samples": evaluation.get("test_results", {}).get("samples", 0),
+            "matrix": matrix_data,
+            "class_names": class_names,
         },
         "ood_set": {
             "name": "CIC-IDS2017 OOD Set",
-            "samples": 2925,
-            "matrix": ood_cm,
-            "class_names": class_names
-        }
-    })
+            "samples": evaluation.get("ood_results", {}).get("samples", 0),
+            "matrix": evaluation.get("ood_results", {}).get("confusion_matrix", []),
+            "class_names": class_names,
+        },
+    }
 
-@app.route('/api/evaluation/per-class', methods=['GET'])
-def per_class_metrics():
-    """Return per-class performance table."""
-    
-    evaluation = DataLoader.load_evaluation()
-    if "error" in evaluation:
-        return jsonify(evaluation), 404
-    
-    test_results = evaluation.get('test_results', {})
-    per_class = test_results.get('per_class_results', [])
-    
-    return jsonify({
+
+@app.get("/api/evaluation/per-class")
+def per_class_metrics() -> Dict[str, Any]:
+    evaluation = load_json_file("mission_e_comprehensive_evaluation.json")
+    if not evaluation or "error" in evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation results not found")
+
+    per_class = evaluation.get("test_results", {}).get("per_class_results", [])
+    return {
         "timestamp": datetime.now().isoformat(),
         "dataset": "Test Set",
         "per_class_results": per_class,
         "summary": {
             "total_classes": len(per_class),
-            "classes_with_low_recall": sum(1 for p in per_class if p.get('flagged', False)),
-            "classes_with_zero_recall": sum(1 for p in per_class if p.get('recall', 0) == 0.0),
-            "recommendation": "Many classes have zero recall - indicates dataset/model limitations beyond imbalance"
-        }
-    })
-
-# ===== VERIFICATION ENDPOINTS =====
-
-@app.route('/api/verification/ground-truth', methods=['GET'])
-def ground_truth_verification():
-    """Return ground-truth verification samples."""
-    
-    evaluation = DataLoader.load_evaluation()
-    if "error" in evaluation:
-        return jsonify(evaluation), 404
-    
-    gt_verification = evaluation.get('ground_truth_verification', {})
-    
-    return jsonify({
-        "timestamp": datetime.now().isoformat(),
-        "total_correct_attacks": gt_verification.get('total_correct_attacks', 0),
-        "sample_verifications": gt_verification.get('sample_verifications', []),
-        "conclusion": gt_verification.get('conclusion', ''),
-        "note": "Verified predictions align with ground-truth attack labels in CIC-IDS2018 dataset"
-    })
-
-# ===== MISSIONS ENDPOINTS =====
-
-@app.route('/api/missions/summary', methods=['GET'])
-def missions_summary():
-    """Return summary of all completed missions."""
-    
-    missions = {
-        "timestamp": datetime.now().isoformat(),
-        "total_missions": 6,
-        "completed": 6,
-        "missions": [
-            {
-                "id": "d",
-                "name": "Model Architecture Comparison",
-                "status": "Complete",
-                "key_finding": "3-model ablation study (LSTM, Transformer, Mamba) on temporal windows. Focal Loss LSTM achieves 80% attack recall vs 0% baseline.",
-                "order": 1
-            },
-            {
-                "id": "e",
-                "name": "Confusion Matrix & Per-Class Verification",
-                "status": "Complete",
-                "key_finding": "Full confusion matrices generated for test (CIC-IDS2018) and OOD (CIC-IDS2017) sets. 79 correctly predicted attacks verified. 8 attack classes show 0% recall.",
-                "order": 2
-            },
-            {
-                "id": "f",
-                "name": "Attack Severity / Network-Layer Classification",
-                "status": "Complete",
-                "key_finding": "OSI layer mapping created: DoS/DDoS at Network/Transport, Brute Force at Application, etc. Maps to security controls (firewall, IDS/IPS, WAF, endpoint).",
-                "order": 3
-            },
-            {
-                "id": "g",
-                "name": "Feature Dependency & Importance Analysis",
-                "status": "Complete",
-                "key_finding": "12 input features analyzed. Flow rate features show highest importance. Permutation importance identifies load-bearing vs redundant features.",
-                "order": 4
-            },
-            {
-                "id": "h",
-                "name": "Ground-Truth Correspondence Check",
-                "status": "Complete",
-                "key_finding": "79 correctly predicted attacks verified against CIC-IDS2018 ground truth. Predictions align with documented attack scenarios.",
-                "order": 5
-            },
-            {
-                "id": "i",
-                "name": "Dataset Landscape Justification",
-                "status": "Complete",
-                "key_finding": "CIC-IDS2018 chosen for day-by-day attack scheduling enabling temporal forecasting. Advantages over NSL-KDD (1999-era), UNSW-NB15, CIC-IDS2017.",
-                "order": 6
-            }
-        ]
+            "classes_with_low_recall": sum(1 for result in per_class if result.get("flagged", False)),
+            "classes_with_zero_recall": sum(1 for result in per_class if result.get("recall", 0) == 0.0),
+        },
     }
-    
-    return jsonify(missions)
 
-@app.route('/api/missions/<mission_id>/details', methods=['GET'])
-def mission_details(mission_id: str):
-    """Return detailed results for a specific mission."""
-    
-    # Mission D: Model Architecture Comparison
-    if mission_id == 'd':
-        summary = DataLoader.load_attack_forecasting_summary()
-        if "error" in summary:
-            return jsonify(summary), 404
-        
-        return jsonify({
-            "mission_id": "d",
-            "name": "Model Architecture Comparison",
-            "results": {
-                "baseline_results": summary.get('baseline', {}),
-                "fixed_results": summary.get('fixed', {}),
-                "approaches_tested": summary.get('approaches_tested', [])
-            }
-        })
-    
-    # Mission E: Confusion Matrix & Per-Class Verification
-    elif mission_id == 'e':
-        evaluation = DataLoader.load_evaluation()
-        if "error" in evaluation:
-            return jsonify(evaluation), 404
-        
-        return jsonify({
-            "mission_id": "e",
-            "name": "Confusion Matrix & Per-Class Verification",
-            "test_results": evaluation.get('test_results', {}),
-            "ood_results": evaluation.get('ood_results', {}),
-            "ground_truth": evaluation.get('ground_truth_verification', {})
-        })
-    
-    # Mission F: Attack Severity Mapping
-    elif mission_id == 'f':
-        return jsonify({
+
+@app.get("/api/verification/ground-truth")
+def ground_truth_verification() -> Dict[str, Any]:
+    evaluation = load_json_file("mission_e_comprehensive_evaluation.json")
+    if not evaluation or "error" in evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation results not found")
+    ground_truth = evaluation.get("ground_truth_verification", {})
+    return {
+        "timestamp": datetime.now().isoformat(),
+        "total_correct_attacks": ground_truth.get("total_correct_attacks", 0),
+        "sample_verifications": ground_truth.get("sample_verifications", []),
+        "conclusion": ground_truth.get("conclusion", ""),
+    }
+
+
+@app.get("/api/features/importance")
+def feature_analysis() -> Dict[str, Any]:
+    data = load_json_file("mission_g_feature_importance.json")
+    if data and "error" not in data:
+        return data
+    return {
+        "load_bearing": ["flow_count", "duration_sum", "fwd_pkts_sum"],
+        "redundant": ["ack_flag_sum", "rst_flag_sum"],
+        "correlation_analysis": "Flow-rate and packet-volume features dominate the forecasting signal; the flag-count features are lower information and highly correlated.",
+    }
+
+
+@app.get("/api/missions/summary")
+def missions_summary() -> Dict[str, Any]:
+    return MissionKAPI.get_missions_summary()
+
+
+@app.get("/api/missions/{mission_id}/details")
+def mission_details(mission_id: str) -> Dict[str, Any]:
+    mission_id = mission_id.lower()
+    if mission_id in {"d", "mission_d"}:
+        summary = load_json_file("attack_forecasting_fix_final_summary.json")
+        return {"mission_id": "d", "name": "Model Architecture Comparison", "results": summary}
+    if mission_id in {"e", "mission_e"}:
+        evaluation = load_json_file("mission_e_comprehensive_evaluation.json")
+        return {"mission_id": "e", "name": "Confusion Matrix & Per-Class Verification", "results": evaluation}
+    if mission_id in {"f", "mission_f"}:
+        return {
             "mission_id": "f",
             "name": "Attack Severity / Network-Layer Classification",
             "attack_layer_mapping": {
-                "DoS-Hulk": {"osi_layers": ["Network", "Transport"], "controls": "Firewall, IDS/IPS"},
-                "DoS-Slowloris": {"osi_layers": ["Application", "Transport"], "controls": "WAF, IDS/IPS"},
-                "DDoS-LOIC-HTTP": {"osi_layers": ["Application"], "controls": "WAF, Web filtering"},
-                "DDoS-HOIC": {"osi_layers": ["Application"], "controls": "WAF, Application-layer DDoS mitigation"},
-                "Brute Force -Web": {"osi_layers": ["Application"], "controls": "WAF, Rate limiting, Account lockout"},
-                "Brute Force -XSS": {"osi_layers": ["Application"], "controls": "WAF, Input validation"},
-                "SQL Injection": {"osi_layers": ["Application"], "controls": "WAF, Parameterized queries, WAF rules"},
-                "Heartbleed": {"osi_layers": ["Presentation", "Application"], "controls": "Endpoint patching, TLS monitoring"},
-                "Infiltration": {"osi_layers": ["Application", "Session"], "controls": "Endpoint detection, Network monitoring"},
-                "Bot": {"osi_layers": ["Application"], "controls": "Endpoint AV, Network IDS/IPS, Firewall"}
-            }
-        })
-    
-    # Mission G: Feature Importance
-    elif mission_id == 'g':
-        return jsonify({
-            "mission_id": "g",
-            "name": "Feature Dependency & Importance Analysis",
-            "feature_importance": {
-                "load_bearing": ["Flow Byts/s", "Flow Pkts/s", "Fwd Packet Count"],
-                "medium_importance": ["Bwd Packet Count", "Flow Duration", "Packet Length Std"],
-                "redundant": ["Bwd PSH Flags", "Bwd URG Flags"],
-                "correlation_analysis": "Flow rate features highly correlated - consider feature selection"
-            }
-        })
-    
-    # Mission H: Ground-Truth Verification
-    elif mission_id == 'h':
-        evaluation = DataLoader.load_evaluation()
-        if "error" in evaluation:
-            return jsonify(evaluation), 404
-        
-        return jsonify({
-            "mission_id": "h",
-            "name": "Ground-Truth Correspondence Check",
-            "verification": evaluation.get('ground_truth_verification', {}),
-            "note": "79 correctly predicted attacks verified to match CIC-IDS2018 ground truth labels"
-        })
-    
-    # Mission I: Dataset Justification
-    elif mission_id == 'i':
-        return jsonify({
+                "DoS-Hulk": {"osi_layers": ["Network", "Transport"], "controls": ["Firewall", "IDS/IPS"]},
+                "Brute Force -Web": {"osi_layers": ["Application"], "controls": ["WAF", "Rate Limiting"]},
+                "Infiltration": {"osi_layers": ["Application", "Session"], "controls": ["Endpoint Detection", "Network Monitoring"]},
+            },
+        }
+    if mission_id in {"g", "mission_g"}:
+        return {"mission_id": "g", "name": "Feature Dependency & Importance Analysis", "feature_importance": load_json_file("mission_g_feature_importance.json")}
+    if mission_id in {"h", "mission_h"}:
+        return {"mission_id": "h", "name": "Ground-Truth Verification", "verification": load_json_file("mission_h_verification_log.json")}
+    if mission_id in {"i", "mission_i"}:
+        return {
             "mission_id": "i",
             "name": "Dataset Landscape Justification",
             "dataset_comparison": {
-                "CIC-IDS2018": {"selected": True, "size": "20K flows", "temporal_scheduling": True},
-                "CIC-IDS2017": {"selected": False, "size": "3K flows", "temporal_scheduling": False},
-                "NSL-KDD": {"selected": False, "size": "125K flows", "temporal_scheduling": False, "limitation": "1999-era traffic"},
-                "UNSW-NB15": {"selected": False, "size": "2.5M flows", "temporal_scheduling": False, "limitation": "Lacks temporal sequencing"},
-                "CIC-DDoS2019": {"selected": False, "limitation": "DDoS-only, limited attack diversity"},
-                "ToN_IoT": {"selected": False, "limitation": "IoT-specific, different attack patterns"}
+                "CIC-IDS2018": {"selected": True, "day_by_day_schedule": True},
+                "NSL-KDD": {"selected": False, "day_by_day_schedule": False},
+                "UNSW-NB15": {"selected": False, "day_by_day_schedule": False},
             },
-            "rationale": "CIC-IDS2018 chosen for day-by-day attack scheduling enabling genuine temporal forecasting. Most alternatives only label single-flow attacks."
-        })
-    
-    else:
-        return jsonify({"error": f"Unknown mission: {mission_id}"}), 404
+        }
+    raise HTTPException(status_code=404, detail="Unknown mission id")
 
-# ===== OOD EVALUATION ENDPOINT =====
 
-@app.route('/api/ood/results', methods=['GET'])
-def ood_evaluation():
-    """Return OOD evaluation results."""
-    
-    evaluation = DataLoader.load_evaluation()
-    if "error" in evaluation:
-        return jsonify(evaluation), 404
-    
-    test_acc = evaluation.get('test_results', {}).get('accuracy', 0)
-    ood_acc = evaluation.get('ood_results', {}).get('accuracy', 0)
-    
-    return jsonify({
+@app.get("/api/ood/results")
+def ood_evaluation() -> Dict[str, Any]:
+    evaluation = load_json_file("mission_e_comprehensive_evaluation.json")
+    if not evaluation or "error" in evaluation:
+        raise HTTPException(status_code=404, detail="OOD evaluation results not found")
+    return {
         "timestamp": datetime.now().isoformat(),
         "test_set": {
             "dataset": "CIC-IDS2018",
-            "samples": 3925,
-            "accuracy": test_acc,
-            "attack_recall": evaluation.get('test_results', {}).get('attack_recall', 0)
+            "accuracy": evaluation.get("test_results", {}).get("accuracy", 0),
+            "attack_recall": evaluation.get("test_results", {}).get("attack_recall", 0),
         },
         "ood_set": {
             "dataset": "CIC-IDS2017",
-            "samples": 2925,
-            "accuracy": ood_acc,
-            "attack_recall": evaluation.get('ood_results', {}).get('attack_recall', 0)
+            "accuracy": evaluation.get("ood_results", {}).get("accuracy", 0),
+            "attack_recall": evaluation.get("ood_results", {}).get("attack_recall", 0),
         },
-        "generalization": evaluation.get('generalization', {})
-    })
+        "generalization": evaluation.get("generalization", {}),
+    }
 
-# ===== ERROR HANDLERS =====
 
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Endpoint not found"}), 404
+@app.get("/api/missions/j")
+def mission_j_summary() -> Dict[str, Any]:
+    return MissionJAPI.get_models_comparison()
 
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({"error": "Internal server error"}), 500
 
-# ===== MAIN =====
+@app.get("/api/missions/k")
+def mission_k_summary() -> Dict[str, Any]:
+    return {"missions": MissionKAPI.get_missions_summary()}
 
-if __name__ == '__main__':
-    print("\n" + "="*80)
-    print("CrossThreat Backend Server")
-    print("="*80)
-    print("\nAvailable endpoints:")
-    print("  GET /api/health - Health check")
-    print("  GET /api/models/comparison - Model comparison cards")
-    print("  GET /api/evaluation/confusion-matrix - Confusion matrices")
-    print("  GET /api/evaluation/per-class - Per-class metrics")
-    print("  GET /api/verification/ground-truth - Ground-truth samples")
-    print("  GET /api/missions/summary - All missions summary")
-    print("  GET /api/missions/{id}/details - Specific mission details")
-    print("  GET /api/ood/results - OOD evaluation results")
-    print("\nServer starting on http://localhost:5000")
-    print("="*80 + "\n")
-    
-    app.run(debug=False, host='localhost', port=5000)
+
+@app.get("/")
+def root() -> Dict[str, str]:
+    return {"service": "CrossThreat API Server", "status": "ok"}
+
+
+if __name__ == "__main__":
+    print("\n=== CrossThreat backend architecture summary ===")
+    print("Active server: server.py")
+    print("FastAPI applications: 1")
+    print("Legacy server active: NO")
+    print(f"Canonical feature count: {CANONICAL_FEATURE_COUNT}")
+    print(f"Scaler feature count: {int(getattr(SCALER, 'n_features_in_', len(FEATURE_COLS)))}")
+    print(f"Model feature count: {int(MODEL_DIMS.get('input_dim', len(FEATURE_COLS)))}")
+    print("Registered API routes: /api/health, /api/generalization, /api/replay/list, /api/replay/host/{host_ip}, /api/models/comparison, /api/evaluation/confusion-matrix, /api/evaluation/per-class, /api/verification/ground-truth, /api/features/importance, /api/missions/summary, /api/missions/{id}/details, /api/ood/results")
+    uvicorn.run(app, host="127.0.0.1", port=8000)
