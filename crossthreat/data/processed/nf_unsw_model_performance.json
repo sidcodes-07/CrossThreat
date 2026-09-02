@@ -1,0 +1,80 @@
+{
+  "dataset": "NF-UNSW-NB15-v3",
+  "model": "RandomForestClassifier",
+  "accuracy": 0.9742054810446326,
+  "classification_report": {
+    "Analysis": {
+      "precision": 0.23431734317343172,
+      "recall": 0.2866817155756208,
+      "f1-score": 0.2578680203045685,
+      "support": 443.0
+    },
+    "Backdoor": {
+      "precision": 0.12255541069100391,
+      "recall": 0.0724191063174114,
+      "f1-score": 0.0910411622276029,
+      "support": 1298.0
+    },
+    "Benign": {
+      "precision": 0.9999976835389964,
+      "recall": 0.9999976835389964,
+      "f1-score": 0.9999976835389964,
+      "support": 431693.0
+    },
+    "DoS": {
+      "precision": 0.5327102803738317,
+      "recall": 0.3313953488372093,
+      "f1-score": 0.40860215053763443,
+      "support": 1892.0
+    },
+    "Exploits": {
+      "precision": 0.7462297392529951,
+      "recall": 0.7490803621958121,
+      "f1-score": 0.7476523335451528,
+      "support": 14136.0
+    },
+    "Fuzzers": {
+      "precision": 0.6446118828977317,
+      "recall": 0.7958333333333333,
+      "f1-score": 0.7122848098521313,
+      "support": 10320.0
+    },
+    "Generic": {
+      "precision": 0.8874193040466068,
+      "recall": 0.8278495887191539,
+      "f1-score": 0.8566000455961699,
+      "support": 6808.0
+    },
+    "Reconnaissance": {
+      "precision": 0.7280254777070063,
+      "recall": 0.5856532877882152,
+      "f1-score": 0.6491244675816374,
+      "support": 5855.0
+    },
+    "Shellcode": {
+      "precision": 0.5104895104895105,
+      "recall": 0.7398648648648649,
+      "f1-score": 0.6041379310344828,
+      "support": 592.0
+    },
+    "Worms": {
+      "precision": 0.6607142857142857,
+      "recall": 0.7708333333333334,
+      "f1-score": 0.7115384615384616,
+      "support": 48.0
+    },
+    "accuracy": 0.9742054810446326,
+    "macro avg": {
+      "precision": 0.60670709178854,
+      "recall": 0.615960862450395,
+      "f1-score": 0.6038847065756838,
+      "support": 473085.0
+    },
+    "weighted avg": {
+      "precision": 0.9740362291173951,
+      "recall": 0.9742054810446326,
+      "f1-score": 0.9736965560617803,
+      "support": 473085.0
+    }
+  }
+}

@@ -30,3 +30,9 @@ export type HostSummary = {
     mean_lead_time_seconds: number;
   };
 };
+
+export type ReplayHost = {
+  host: string;
+  flow_count: number;
+  replay_steps: number;
+};

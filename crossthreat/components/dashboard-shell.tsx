@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useReplaySession } from "./replay-session";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
@@ -18,15 +19,17 @@ const navItems = [
 export function DashboardShell({
   title,
   subtitle,
+  session,
   children,
 }: {
   title: string;
   subtitle?: string;
+  session?: string;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [replayPlaying, setReplayPlaying] = useState(true);
   const [time, setTime] = useState("00:00:00");
+  const { host, hosts, hostsLoading, hostsError, currentStep, totalSteps, playing, speed, setHost, setPlaying, next, previous, reset, setSpeed } = useReplaySession();
 
   useEffect(() => {
     const updateTime = () => {
@@ -46,8 +49,6 @@ export function DashboardShell({
 
   const dataSource = "Network Traffic Replay";
   const dataset = "NF-UNSW-NB15-v3 Replay";
-  const session = "host-01";
-
   return (
     <div className="min-h-screen bg-[#0A0E1A] text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-[1800px]">
@@ -105,31 +106,49 @@ export function DashboardShell({
                   <div className="mt-1 font-mono text-[11px] text-slate-200">{time}</div>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2">
-                  <div className="text-slate-500">Session</div>
-                  <div className="mt-1 text-[11px] font-semibold normal-case tracking-normal text-slate-200">{session}</div>
+                  <label htmlFor="active-host" className="text-slate-500">Dataset Host / IP</label>
+                  {hostsLoading ? <div className="mt-1 text-[11px] text-slate-400">Loading hosts...</div> : hostsError ? <div className="mt-1 text-[11px] text-red-300">Unable to load available hosts. Retrying...</div> : hosts.length ? (
+                    <div className="relative mt-1">
+                      <select id="active-host" value={host} onChange={(event) => setHost(event.target.value)} className="w-[190px] appearance-none rounded-lg border border-cyan-500/30 bg-slate-950 px-3 py-1.5 pr-8 text-[11px] font-semibold normal-case tracking-normal text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.08)] outline-none transition hover:border-cyan-400/70 focus:border-cyan-300 focus:ring-1 focus:ring-cyan-400/40">
+                        {hosts.map((availableHost) => <option key={availableHost} value={availableHost}>{availableHost}</option>)}
+                      </select>
+                      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-cyan-300">▾</span>
+                    </div>
+                  ) : <div className="mt-1 text-[11px] text-slate-400">{host || session || "No replayable hosts found."}</div>}
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2">
                   <div className="text-slate-500">Status</div>
                   <div className="mt-1 flex items-center gap-2 text-[11px] font-semibold normal-case tracking-normal text-emerald-300">
                     <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
-                    {replayPlaying ? "Live" : "Paused"}
+                    {playing ? "Live" : "Paused"}
                   </div>
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => setReplayPlaying((value) => !value)}
+                onClick={() => setPlaying(!playing)}
                 className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-200"
               >
-                {replayPlaying ? "Pause" : "Play"}
+                {playing ? "Pause" : "Play"}
               </button>
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={previous} className="rounded-full border border-slate-700 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-slate-300">Previous</button>
+                <button type="button" onClick={next} className="rounded-full border border-slate-700 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-slate-300">Next</button>
+                <button type="button" onClick={reset} className="rounded-full border border-slate-700 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-slate-300">Reset</button>
+                <select value={speed} onChange={(event) => setSpeed(Number(event.target.value))} aria-label="Replay speed" className="rounded-full border border-slate-700 bg-slate-900 px-2 py-2 text-[10px] text-slate-300">
+                  <option value={0.5}>0.5x</option>
+                  <option value={1}>1x</option>
+                  <option value={2}>2x</option>
+                </select>
+              </div>
             </div>
           </header>
 
           <section className="mb-6">
             <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-cyan-400">{title}</div>
             {subtitle ? <div className="text-sm text-slate-400">{subtitle}</div> : null}
+            <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-slate-500">Replay step {totalSteps ? `${currentStep + 1} / ${totalSteps}` : "Loading"}</div>
           </section>
 
           {children}

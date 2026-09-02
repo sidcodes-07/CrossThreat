@@ -4,23 +4,25 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "../../../components/api";
 import { DashboardShell } from "../../../components/dashboard-shell";
+import { useReplaySession } from "../../../components/replay-session";
 
 export default function AlertDetailPage() {
   const params = useParams<{ alertId: string }>();
   const [alert, setAlert] = useState<any>(null);
+  const { host, currentStep } = useReplaySession();
 
   useEffect(() => {
-    if (!params.alertId) return;
+    if (!params.alertId || !host) return;
     async function load() {
       try {
-        const detail = await api<any>(`/api/alerts/${encodeURIComponent(params.alertId)}/details`);
+        const detail = await api<any>(`/api/alerts/${encodeURIComponent(params.alertId)}/details?host=${encodeURIComponent(host)}&step=${currentStep}`);
         setAlert(detail);
       } catch (_error) {
         setAlert(null);
       }
     }
     void load();
-  }, [params.alertId]);
+  }, [params.alertId, host, currentStep]);
 
   if (!alert) {
     return (
@@ -44,6 +46,10 @@ export default function AlertDetailPage() {
             }`}>
               {alert.severity}
             </span>
+          </div>
+          <div className="mt-4 text-xs uppercase tracking-[0.2em] text-slate-500">
+            Dataset host / IP: <span className="font-mono text-cyan-300">{alert.source || host}</span>
+            <span className="ml-4">Replay step: {currentStep + 1}</span>
           </div>
         </div>
 

@@ -3,23 +3,29 @@
 import { useEffect, useState } from "react";
 import { api } from "../../components/api";
 import { DashboardShell } from "../../components/dashboard-shell";
+import { useReplaySession } from "../../components/replay-session";
 
 export default function ReportsPage() {
   const [summary, setSummary] = useState<any>({});
   const [attackTypes, setAttackTypes] = useState<any[]>([]);
   const [attacksOverTime, setAttacksOverTime] = useState<any[]>([]);
+  const [model, setModel] = useState<any>({});
+  const { host, currentStep } = useReplaySession();
 
   useEffect(() => {
     async function load() {
+      if (!host) return;
       try {
-        const [summaryData, typesData, historyData] = await Promise.all([
-          api<any>("/api/reports/summary"),
-          api<any>("/api/reports/attack-types"),
-          api<any>("/api/reports/attacks-over-time"),
+        const [summaryData, typesData, historyData, modelData] = await Promise.all([
+          api<any>(`/api/reports/summary?host=${encodeURIComponent(host)}&step=${currentStep}`),
+          api<any>(`/api/reports/attack-types?host=${encodeURIComponent(host)}&step=${currentStep}`),
+          api<any>(`/api/reports/attacks-over-time?host=${encodeURIComponent(host)}&step=${currentStep}`),
+          api<any>("/api/models/performance"),
         ]);
         setSummary(summaryData.summary || summaryData);
         setAttackTypes(typesData.attack_types || typesData);
         setAttacksOverTime(historyData.attacks_over_time || historyData);
+        setModel(modelData || {});
       } catch (_error) {
         setSummary({});
       }
@@ -27,11 +33,14 @@ export default function ReportsPage() {
     void load();
     const interval = window.setInterval(load, 2500);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [host, currentStep]);
 
   return (
     <DashboardShell title="Reports & Analytics" subtitle="Executive and operational reporting across forecast history">
       <div className="space-y-6">
+        <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-xs uppercase tracking-[0.2em] text-slate-400">
+          Report scope: <span className="font-mono text-cyan-300">{host || "Loading host"}</span> · Replay step {currentStep + 1}
+        </div>
         <div className="grid gap-4 md:grid-cols-4">
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
             <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">Total attacks</div>
@@ -51,6 +60,13 @@ export default function ReportsPage() {
           </div>
         </div>
 
+        <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
+          <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Active model performance</div>
+          <div className="grid gap-3 sm:grid-cols-4">
+            {["accuracy", "precision", "recall", "f1"].map((metric) => <div key={metric}><div className="flex justify-between text-xs uppercase text-slate-400"><span>{metric}</span><span className="font-mono text-cyan-300">{typeof model[metric] === "number" ? `${model[metric].toFixed(1)}%` : "N/A"}</span></div><div className="mt-1 h-2 rounded bg-slate-800"><div className="h-full rounded bg-cyan-400" style={{ width: `${Math.min(Number(model[metric] || 0), 100)}%` }} /></div></div>)}
+          </div>
+        </div>
+
         <div className="grid gap-6 xl:grid-cols-2">
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
             <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Attacks over time</div>
@@ -62,6 +78,7 @@ export default function ReportsPage() {
                       <div className="w-full rounded-t bg-cyan-400/80" style={{ height: `${Math.min(Number(point.count), 100)}%` }} />
                       <span className="font-mono text-[9px] text-slate-500">{point.period}</span>
                     </div>
+
                   ))}
                 </div>
               ) : <div className="grid h-full place-items-center text-sm text-slate-500">No data available yet</div>}

@@ -3,23 +3,29 @@
 import { useEffect, useState } from "react";
 import { api } from "../../components/api";
 import { DashboardShell } from "../../components/dashboard-shell";
+import { useReplaySession } from "../../components/replay-session";
 
 export default function NetworkMonitorPage() {
   const [topology, setTopology] = useState<any>({ nodes: [], edges: [] });
   const [protocolBreakdown, setProtocolBreakdown] = useState<any[]>([]);
   const [topPairs, setTopPairs] = useState<any[]>([]);
+  const [traffic, setTraffic] = useState<any[]>([]);
+  const { host, currentStep } = useReplaySession();
 
   useEffect(() => {
     async function load() {
+      if (!host) return;
       try {
-        const [network, protocol, pairs] = await Promise.all([
-          api<any>("/api/network/topology"),
-          api<any>("/api/network/protocol-breakdown"),
-          api<any>("/api/network/top-pairs"),
+        const [network, protocol, pairs, trafficData] = await Promise.all([
+          api<any>(`/api/network/topology?host=${encodeURIComponent(host)}&step=${currentStep}`),
+          api<any>(`/api/network/protocol-breakdown?host=${encodeURIComponent(host)}&step=${currentStep}`),
+          api<any>(`/api/network/top-pairs?host=${encodeURIComponent(host)}&step=${currentStep}`),
+          api<any[]>(`/api/network/traffic-over-time?host=${encodeURIComponent(host)}&step=${currentStep}`),
         ]);
         setTopology(network || { nodes: [], edges: [] });
         setProtocolBreakdown(protocol);
         setTopPairs(pairs);
+        setTraffic(trafficData || []);
       } catch (_error) {
         setTopology({ nodes: [], edges: [] });
       }
@@ -27,7 +33,7 @@ export default function NetworkMonitorPage() {
     void load();
     const interval = window.setInterval(load, 2500);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [host, currentStep]);
 
   return (
     <DashboardShell title="Network Monitor" subtitle="Live topology and traffic concentration">
@@ -79,6 +85,13 @@ export default function NetworkMonitorPage() {
                   <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Peak</div>
                   <div className="mt-2 font-mono text-xl font-black text-red-300">                  {topology.summary?.peak ?? "—"}</div>
                 </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
+              <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Traffic volume over replay time</div>
+              <div className="flex h-44 items-end gap-1 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+                {traffic.length ? traffic.map((point: any, index: number) => <div key={`traffic-${index}`} title={`Step ${point.step}: ${point.flows} flows`} className="flex-1 rounded-t bg-violet-400/80" style={{ height: `${Math.max(3, Math.min(Number(point.flows) / Math.max(...traffic.map((item: any) => Number(item.flows)), 1) * 100, 100))}%` }} />) : <div className="m-auto text-sm text-slate-500">No traffic history available.</div>}
               </div>
             </div>
 

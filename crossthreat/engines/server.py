@@ -6,12 +6,15 @@ replay endpoints are exposed from here; legacy server code is not part of the
 runtime path.
 """
 
+import errno
 import json
 import os
 import pickle
+import socket
 import sys
 import time
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -47,6 +50,27 @@ app.add_middleware(
 
 PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 CANONICAL_FEATURE_COUNT = 16
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8000
+PROTOCOL_NAMES = {
+    "1": "ICMP",
+    "2": "IGMP",
+    "6": "TCP",
+    "17": "UDP",
+    "47": "GRE",
+    "89": "OSPF",
+    "132": "SCTP",
+}
+
+
+def format_protocol(protocol: Any) -> str:
+    protocol_id = str(protocol)
+    return f"{PROTOCOL_NAMES[protocol_id]} ({protocol_id})" if protocol_id in PROTOCOL_NAMES else f"Protocol {protocol_id}"
+
+
+def numeric_total(value: Any) -> int | float:
+    numeric = float(value)
+    return int(numeric) if numeric.is_integer() else numeric
 
 with open(PROCESSED_DIR / "metadata.pkl", "rb") as f:
     METADATA = pickle.load(f)
@@ -126,6 +150,7 @@ def load_json_file(filename: str) -> Dict[str, Any]:
 
 
 _FLOW_CACHE: pd.DataFrame | None = None
+_RAW_FLOW_CACHE: pd.DataFrame | None = None
 
 
 def get_live_flows() -> pd.DataFrame:
@@ -147,6 +172,20 @@ def get_live_flows() -> pd.DataFrame:
     return _FLOW_CACHE
 
 
+def get_raw_network_flows() -> pd.DataFrame:
+    global _RAW_FLOW_CACHE
+    if _RAW_FLOW_CACHE is None:
+        flows = get_live_flows()
+        if flows.empty:
+            return flows
+        _RAW_FLOW_CACHE = flows.copy()
+        scaled_features = flows[FEATURE_COLS].values.astype(np.float32)
+        raw_features = SCALER.inverse_transform(scaled_features)
+        for index, feature in enumerate(FEATURE_COLS):
+            _RAW_FLOW_CACHE[feature] = raw_features[:, index]
+    return _RAW_FLOW_CACHE
+
+
 def get_replay_window(flows: pd.DataFrame) -> pd.DataFrame:
     if flows.empty:
         return flows
@@ -154,12 +193,24 @@ def get_replay_window(flows: pd.DataFrame) -> pd.DataFrame:
     return flows.iloc[: cursor + 1]
 
 
-def get_dynamic_alerts() -> List[Dict[str, Any]]:
+def get_replay_context(host: str | None = None, step: int | None = None) -> pd.DataFrame:
     flows = get_live_flows()
+    if host and "Host" in flows.columns:
+        flows = flows[flows["Host"].astype(str) == host]
+    if flows.empty:
+        return flows
+    flows = flows.sort_values("TimeWindow").tail(64)
+    if step is not None:
+        flows = flows.iloc[:max(0, min(len(flows), 5 + max(step, 0)))]
+    return flows
+
+
+def get_dynamic_alerts(host: str | None = None, step: int | None = None) -> List[Dict[str, Any]]:
+    flows = get_replay_context(host, step)
     if flows.empty or "Label" not in flows.columns:
         return []
     alerts: List[Dict[str, Any]] = []
-    attack_flows = get_replay_window(flows)
+    attack_flows = flows
     attack_flows = attack_flows[attack_flows["Label"].astype(str).str.lower() != "benign"].tail(100)
     for row_index, (_, row) in enumerate(attack_flows.iterrows()):
         label = str(row.get("Attack", row.get("Label", "Unknown")))
@@ -210,18 +261,43 @@ def get_generalization() -> Dict[str, Any]:
     return result
 
 
+@lru_cache(maxsize=1)
+def _get_replay_host_summaries() -> List[Dict[str, Any]]:
+    test_df = get_live_flows()
+    if test_df.empty or "Host" not in test_df.columns or "Label" not in test_df.columns:
+        return []
+    if "TimeWindow" not in test_df.columns:
+        return []
+    summaries: List[Dict[str, Any]] = []
+    for host, group in test_df.groupby("Host"):
+        replay_steps = max(min(int(group["TimeWindow"].nunique()), 64) - 5, 0)
+        if replay_steps >= 7:
+            summaries.append({
+                "host": str(host),
+                "flow_count": int(len(group)),
+                "replay_steps": replay_steps,
+            })
+    return sorted(summaries, key=lambda item: item["flow_count"], reverse=True)
+
+
 @app.get("/api/replay/list", response_model=List[str])
 def get_replay_hosts() -> List[str]:
-    test_df = pd.read_pickle(PROCESSED_DIR / "test_windows.pkl")
-    hosts_by_attacks = (
-        test_df.groupby("Host")["Label"].nunique().sort_values(ascending=False).index.tolist()
-    )
-    return hosts_by_attacks
+    return [summary["host"] for summary in _get_replay_host_summaries()]
+
+
+@app.get("/api/replay/hosts")
+def get_replay_host_summaries() -> Dict[str, Any]:
+    return {
+        "dataset": "NF-UNSW-NB15-v3",
+        "mode": "replay",
+        "hosts": _get_replay_host_summaries(),
+    }
 
 
 @app.get("/api/replay/host/{host_ip}")
+@lru_cache(maxsize=64)
 def get_host_sequence(host_ip: str) -> Dict[str, Any]:
-    test_df = pd.read_pickle(PROCESSED_DIR / "test_windows.pkl")
+    test_df = get_live_flows()
     host_windows = test_df[test_df["Host"] == host_ip].sort_values("TimeWindow").tail(64).reset_index(drop=True)
 
     if host_windows.empty:
@@ -335,12 +411,12 @@ def get_host_sequence(host_ip: str) -> Dict[str, Any]:
 
 
 @app.get("/api/state/current")
-def get_current_state() -> Dict[str, Any]:
+def get_current_state(host: str | None = None, step: int | None = None) -> Dict[str, Any]:
     try:
         hosts = get_replay_hosts()
     except Exception:
         hosts = []
-    host_ip = hosts[0] if hosts else ""
+    host_ip = host or (hosts[0] if hosts else "")
     try:
         replay = get_host_sequence(host_ip)
     except HTTPException:
@@ -358,7 +434,7 @@ def get_current_state() -> Dict[str, Any]:
             "host": host_ip,
         }
 
-    latest = steps[int(time.time() / 2.5) % len(steps)]
+    latest = steps[min(max(step or 0, 0), len(steps) - 1)]
     forecast_probability = float(latest.get("forecast_probability", 0.0))
     alternative = []
     for step in steps[-5:]:
@@ -459,12 +535,13 @@ def get_upcoming_predictions(host_ip: str) -> List[Dict[str, Any]]:
     replay = get_host_sequence(host_ip)
     upcoming = []
     for step in replay.get("steps", [])[-5:]:
-        confidence = float(step.get("forecast_probability", 0.0)) * 100.0
+        probability = float(step.get("forecast_probability", 0.0)) * 100.0
         upcoming.append({
+            "step": step.get("step"),
             "stage": step.get("forecast_next_state", "Benign"),
-            "eta": f"{max(2, int(60 - confidence / 2))}s",
-            "confidence": round(confidence, 1),
-            "risk": round(confidence, 1),
+            "timestamp": step.get("actual_future_time", step.get("current_observed_time")),
+            "probability": round(probability, 1),
+            "risk": round(probability, 1),
         })
     return upcoming
 
@@ -476,36 +553,46 @@ def get_confidence_history(host_ip: str) -> List[Dict[str, Any]]:
     for idx, step in enumerate(replay.get("steps", [])):
         history.append({
             "step": idx + 1,
-            "time": step.get("current_observed_time", f"T{idx:02d}:00"),
-            "confidence": round(float(step.get("forecast_probability", 0.0)) * 100.0, 1),
+            "timestamp": step.get("actual_future_time", step.get("current_observed_time", f"T{idx:02d}:00")),
+            "probability": round(float(step.get("forecast_probability", 0.0)) * 100.0, 1),
         })
     return history
 
 
 @app.get("/api/evidence/{forecast_id}")
-def get_evidence(forecast_id: str) -> List[Dict[str, Any]]:
-    try:
-        replay = get_host_sequence(forecast_id)
-    except HTTPException:
-        replay = {"steps": []}
+def get_evidence(forecast_id: str, step: int | None = None) -> List[Dict[str, Any]]:
+    replay = get_host_sequence(forecast_id)
     steps = replay.get("steps", [])
     if not steps:
         return []
-    latest = steps[-1]
+    latest = steps[min(max(step if step is not None else len(steps) - 1, 0), len(steps) - 1)]
+    host_windows = get_live_flows()
+    host_windows = host_windows[host_windows["Host"] == forecast_id].sort_values("TimeWindow").tail(64).reset_index(drop=True)
+    input_seq = host_windows[FEATURE_COLS].values.astype(np.float32)[-6:-1]
+    forecast_class = next(
+        (class_id for class_id, label in LABEL_MAP.items() if label == latest["forecast_next_state"]),
+        None,
+    )
+    if forecast_class is None:
+        raise HTTPException(status_code=422, detail="Forecast label is not present in the model label mapping.")
+    attributions, label, probability = EVIDENCE_ENGINE.explain_temporal(
+        LSTM_MODEL, input_seq, target_class_idx=forecast_class
+    )
     evidence_items = []
-    for feature in latest.get("forecast_attribution", [])[:3]:
+    for feature, contribution in attributions[:5]:
         evidence_items.append({
-            "label": feature.get("feature", "traffic_volume"),
-            "value": float(feature.get("value", 0.0)),
-            "description": f"Feature {feature.get('feature', 'traffic_volume')} strongly informs the {latest.get('forecast_next_state', 'Benign')} transition signal.",
-            "explanation": f"This feature contributes to a {float(latest.get('forecast_probability', 0.0)) * 100:.1f}% confidence estimate for the forecasted transition.",
+            "label": feature,
+            "value": contribution,
+            "description": f"Input-gradient attribution for the {label} forecast at replay step {latest.get('step')}.",
+            "explanation": f"{feature} contribution: {contribution:.6f}; model probability: {probability * 100:.1f}%.",
         })
     return evidence_items
 
 
 @app.get("/api/network/topology")
-def get_network_topology() -> Dict[str, Any]:
-    flows = get_live_flows()
+def get_network_topology(host: str | None = None, step: int | None = None) -> Dict[str, Any]:
+    flows = get_replay_context(host, step)
+    flows = get_raw_network_flows().loc[flows.index] if not flows.empty else flows
     if flows.empty:
         return {"nodes": [], "edges": [], "summary": {"total_flows": 0, "active_connections": 0, "bytes": 0, "peak": 0}}
     flows = get_replay_window(flows)
@@ -537,25 +624,25 @@ def get_network_topology() -> Dict[str, Any]:
         "summary": {
             "total_flows": int(len(flows)),
             "active_connections": int(flows[pair_columns].drop_duplicates().shape[0]),
-            "bytes": round(total_bytes, 2),
+            "bytes": numeric_total(total_bytes),
             "peak": int(flows.groupby("TimeWindow").size().max()) if "TimeWindow" in flows.columns else 0,
         },
     }
 
 
 @app.get("/api/network/protocol-breakdown")
-def get_protocol_breakdown() -> List[Dict[str, Any]]:
-    flows = get_live_flows()
+def get_protocol_breakdown(host: str | None = None, step: int | None = None) -> List[Dict[str, Any]]:
+    flows = get_replay_context(host, step)
     if flows.empty or "Protocol" not in flows.columns:
         return []
-    counts = get_replay_window(flows)["Protocol"].astype(str).value_counts()
+    counts = flows["Protocol"].astype(str).value_counts()
     total = int(counts.sum())
-    return [{"protocol": protocol, "percent": round(float(count / total * 100), 2), "flows": int(count)} for protocol, count in counts.items()]
+    return [{"protocol": format_protocol(protocol), "protocol_id": protocol, "percent": round(float(count / total * 100), 2), "flows": int(count)} for protocol, count in counts.items()]
 
 
 @app.get("/api/network/top-talkers")
 def get_top_talkers() -> List[Dict[str, Any]]:
-    flows = get_live_flows()
+    flows = get_raw_network_flows()
     if flows.empty:
         return []
     flows = get_replay_window(flows)
@@ -564,48 +651,62 @@ def get_top_talkers() -> List[Dict[str, Any]]:
         talkers.append({
             "host": str(host_ip),
             "flows": int(group),
-            "bytes": float(flows.loc[flows["Host"] == host_ip, ["IN_BYTES", "OUT_BYTES"]].fillna(0).sum().sum()),
+            "bytes": numeric_total(flows.loc[flows["Host"] == host_ip, ["IN_BYTES", "OUT_BYTES"]].fillna(0).sum().sum()),
             "risk": int(flows.loc[flows["Host"] == host_ip, "Label"].astype(str).str.lower().ne("benign").mean() * 100),
         })
     return talkers
 
 
 @app.get("/api/network/top-pairs")
-def get_top_pairs() -> List[Dict[str, Any]]:
-    flows = get_live_flows()
+def get_top_pairs(host: str | None = None, step: int | None = None) -> List[Dict[str, Any]]:
+    context = get_replay_context(host, step)
+    flows = get_raw_network_flows().loc[context.index] if not context.empty else context
     if flows.empty:
         return []
-    flows = get_replay_window(flows)
     protocol_column = "Protocol" if "Protocol" in flows.columns else "PROTOCOL"
     rows = []
     for (source, destination, protocol), group in flows.groupby(["IPV4_SRC_ADDR", "IPV4_DST_ADDR", protocol_column], dropna=False):
         rows.append({
             "source": str(source),
             "dest": str(destination),
-            "protocol": str(protocol),
-            "bytes": float(group[["IN_BYTES", "OUT_BYTES"]].fillna(0).sum().sum()),
+            "protocol": format_protocol(protocol),
+            "protocol_id": str(protocol),
+            "bytes": numeric_total(group[["IN_BYTES", "OUT_BYTES"]].fillna(0).sum().sum()),
             "packets": int(group[["IN_PKTS", "OUT_PKTS"]].fillna(0).sum().sum()),
         })
     return sorted(rows, key=lambda row: row["bytes"], reverse=True)[:20]
 
 
+@app.get("/api/network/traffic-over-time")
+def get_traffic_over_time(host: str | None = None, step: int | None = None) -> List[Dict[str, Any]]:
+    context = get_replay_context(host, step)
+    if context.empty or "TimeWindow" not in context.columns:
+        return []
+    grouped = context.groupby("TimeWindow", dropna=False)
+    return [
+        {"step": index + 1, "timestamp": str(timestamp), "flows": int(len(group))}
+        for index, (timestamp, group) in enumerate(grouped)
+    ]
+
+
 @app.get("/api/alerts")
-def get_alerts() -> Dict[str, Any]:
-    return {"alerts": get_dynamic_alerts()}
+def get_alerts(host: str | None = None, step: int | None = None) -> Dict[str, Any]:
+    return {"alerts": get_dynamic_alerts(host, step)}
 
 
 @app.get("/api/alerts/summary")
-def get_alert_summary() -> Dict[str, Any]:
-    alerts = get_dynamic_alerts()
+def get_alert_summary(host: str | None = None, step: int | None = None) -> Dict[str, Any]:
+    alerts = get_dynamic_alerts(host, step)
     return {"summary": {severity.lower(): sum(1 for alert in alerts if alert["severity"] == severity) for severity in ("High", "Medium", "Low")}}
 
 
 @app.get("/api/alerts/{alert_id}/details")
-def get_alert_details(alert_id: str) -> Dict[str, Any]:
-    alert = next((item for item in get_dynamic_alerts() if item["id"] == alert_id), None)
+def get_alert_details(alert_id: str, host: str | None = None, step: int | None = None) -> Dict[str, Any]:
+    alert = next((item for item in get_dynamic_alerts(host, step) if item["id"] == alert_id), None)
     if alert is None:
         raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
-    flows = get_live_flows()
+    context = get_replay_context(host, step)
+    flows = get_raw_network_flows().loc[context.index] if not context.empty else context
     source_flows = flows[flows["IPV4_SRC_ADDR"].astype(str) == alert["source"]] if not flows.empty else flows
     byte_columns = [column for column in ("IN_BYTES", "OUT_BYTES") if column in source_flows.columns]
     packet_columns = [column for column in ("IN_PKTS", "OUT_PKTS") if column in source_flows.columns]
@@ -624,35 +725,32 @@ def get_alert_details(alert_id: str) -> Dict[str, Any]:
 
 @app.get("/api/models/performance")
 def get_model_performance() -> Dict[str, Any]:
-    evaluation = load_json_file("nf_unsw_model_performance.json")
+    evaluation = load_json_file("experiments/nf_unsw_nb15_v3/lstm_metrics.json")
     if evaluation.get("error"):
-        raise HTTPException(status_code=404, detail="NF-UNSW-NB15-v3 model performance not found")
-    test_results = evaluation.get("test_results", {})
-    if "classification_report" in evaluation:
-        report = evaluation["classification_report"]
-        return {
-            "accuracy": float(evaluation.get("accuracy", 0) * 100),
-            "precision": float(report.get("macro avg", {}).get("precision", 0) * 100),
-            "recall": float(report.get("macro avg", {}).get("recall", 0) * 100),
-            "f1": float(report.get("macro avg", {}).get("f1-score", 0) * 100),
-        }
-    results: Dict[str, Any] = {}
-    if "accuracy" in test_results:
-        results["accuracy"] = float(test_results["accuracy"] * 100)
-    if "precision" in test_results:
-        results["precision"] = float(np.mean(test_results["precision"]) * 100) if isinstance(test_results["precision"], list) else float(test_results["precision"] * 100)
-    if "recall" in test_results:
-        results["recall"] = float(np.mean(test_results["recall"]) * 100) if isinstance(test_results["recall"], list) else float(test_results["recall"] * 100)
-    if "f1" in test_results:
-        results["f1"] = float(np.mean(test_results["f1"]) * 100) if isinstance(test_results["f1"], list) else float(test_results["f1"] * 100)
-    probabilities = []
-    for host_ip in get_replay_hosts()[:20]:
-        replay = get_host_sequence(host_ip)
-        probabilities.extend(float(step.get("forecast_probability", 0.0)) * 100 for step in replay.get("steps", []))
+        raise HTTPException(status_code=404, detail="NF-UNSW-NB15-v3 LSTM performance not found")
+    metrics = evaluation.get("metrics", {})
+    results: Dict[str, Any] = {
+        "dataset": "NF-UNSW-NB15-v3",
+        "model": "LSTM",
+        "accuracy": float(metrics.get("accuracy", 0) * 100),
+        "precision": float(metrics.get("macro_precision", 0) * 100),
+        "recall": float(metrics.get("macro_recall", 0) * 100),
+        "f1": float(metrics.get("macro_f1", 0) * 100),
+        "attack_precision": float(metrics.get("attack_precision", 0) * 100),
+        "attack_recall": float(metrics.get("attack_recall", 0) * 100),
+        "attack_f1": float(metrics.get("attack_f1", 0) * 100),
+        "auc_roc": None,
+        "metric_note": "AUC-ROC was not reported by the held-out LSTM evaluation artifact.",
+    }
+    probabilities = [
+        max(float(value) for value in row) * 100
+        for row in evaluation.get("probabilities", [])
+        if isinstance(row, list) and row
+    ]
     if probabilities:
         bins = np.linspace(0, 100, 11)
         counts, _ = np.histogram(probabilities, bins=bins)
-        results["confidence_distribution"] = [
+        results["probability_distribution"] = [
             {"bucket": f"{int(bins[index])}-{int(bins[index + 1])}", "count": int(count)}
             for index, count in enumerate(counts)
         ]
@@ -674,12 +772,16 @@ def get_model_feature_importance() -> Dict[str, Any]:
     model = CURRENT_CLASSIFIER.model
     result = permutation_importance(model, SCALER.transform(sample.to_numpy()), target, n_repeats=1, random_state=42, n_jobs=1)
     ranked = sorted(zip(FEATURE_COLS, result.importances_mean), key=lambda item: item[1], reverse=True)[:6]
-    return {"dataset": "NF-UNSW-NB15-v3", "top_features": [{"name": name, "importance": float(value)} for name, value in ranked]}
+    return {
+        "dataset": "NF-UNSW-NB15-v3",
+        "scope": "global permutation importance for baseline classifier",
+        "top_features": [{"name": name, "importance": float(value)} for name, value in ranked],
+    }
 
 
 @app.get("/api/reports/summary")
-def get_reports_summary() -> Dict[str, Any]:
-    alerts = get_dynamic_alerts()
+def get_reports_summary(host: str | None = None, step: int | None = None) -> Dict[str, Any]:
+    alerts = get_dynamic_alerts(host, step)
     return {
         "summary": {
             "total_attacks": len(alerts),
@@ -691,8 +793,8 @@ def get_reports_summary() -> Dict[str, Any]:
 
 
 @app.get("/api/reports/attack-types")
-def get_attack_types() -> Dict[str, Any]:
-    alerts = get_dynamic_alerts()
+def get_attack_types(host: str | None = None, step: int | None = None) -> Dict[str, Any]:
+    alerts = get_dynamic_alerts(host, step)
     counts: Dict[str, int] = {}
     for alert in alerts:
         counts[alert["type"]] = counts.get(alert["type"], 0) + 1
@@ -701,8 +803,8 @@ def get_attack_types() -> Dict[str, Any]:
 
 
 @app.get("/api/reports/attacks-over-time")
-def get_attacks_over_time() -> Dict[str, Any]:
-    alerts = get_dynamic_alerts()
+def get_attacks_over_time(host: str | None = None, step: int | None = None) -> Dict[str, Any]:
+    alerts = get_dynamic_alerts(host, step)
     counts: Dict[str, int] = {}
     for alert in alerts:
         period = str(alert["time"])[:13]
@@ -765,6 +867,11 @@ def get_reproducibility() -> Dict[str, Any]:
 
 @app.get("/api/models/comparison")
 def models_comparison() -> Dict[str, Any]:
+    return MissionJAPI.get_models_comparison()
+
+
+@app.get("/api/missions/j/models")
+def mission_j_models() -> Dict[str, Any]:
     return MissionJAPI.get_models_comparison()
 
 
@@ -925,6 +1032,19 @@ def root() -> Dict[str, str]:
 
 
 if __name__ == "__main__":
+    host = os.environ.get("CROSSTHREAT_HOST", DEFAULT_HOST)
+    port_value = os.environ.get("CROSSTHREAT_PORT", str(DEFAULT_PORT))
+    try:
+        port = int(port_value)
+    except ValueError as exc:
+        raise SystemExit(
+            f"Invalid CROSSTHREAT_PORT value {port_value!r}; expected an integer between 1 and 65535."
+        ) from exc
+    if not 1 <= port <= 65535:
+        raise SystemExit(
+            f"Invalid CROSSTHREAT_PORT value {port}; expected an integer between 1 and 65535."
+        )
+
     print("\n=== CrossThreat backend architecture summary ===")
     print("Active server: server.py")
     print("FastAPI applications: 1")
@@ -933,4 +1053,19 @@ if __name__ == "__main__":
     print(f"Scaler feature count: {int(getattr(SCALER, 'n_features_in_', len(FEATURE_COLS)))}")
     print(f"Model feature count: {int(MODEL_DIMS.get('input_dim', len(FEATURE_COLS)))}")
     print("Registered API routes: /api/health, /api/generalization, /api/replay/list, /api/replay/host/{host_ip}, /api/models/comparison, /api/evaluation/confusion-matrix, /api/evaluation/per-class, /api/verification/ground-truth, /api/features/importance, /api/missions/summary, /api/missions/{id}/details, /api/ood/results")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        server_socket.bind((host, port))
+    except OSError as exc:
+        if exc.errno == errno.EADDRINUSE or getattr(exc, "winerror", None) == 10048:
+            raise SystemExit(
+                f"CrossThreat cannot start because {host}:{port} is already in use. "
+                f"Stop the existing server or choose another port, for example: "
+                f'$env:CROSSTHREAT_PORT = "8001"; python server.py'
+            ) from exc
+        raise
+    finally:
+        server_socket.close()
+
+    print(f"Server address: http://{host}:{port}")
+    uvicorn.run(app, host=host, port=port)

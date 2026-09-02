@@ -4,17 +4,20 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "../../components/api";
 import { DashboardShell } from "../../components/dashboard-shell";
+import { useReplaySession } from "../../components/replay-session";
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>({});
+  const { host, currentStep } = useReplaySession();
 
   useEffect(() => {
     async function load() {
+      if (!host) return;
       try {
         const [list, summaryData] = await Promise.all([
-          api<any>("/api/alerts"),
-          api<any>("/api/alerts/summary"),
+          api<any>(`/api/alerts?host=${encodeURIComponent(host)}&step=${currentStep}`),
+          api<any>(`/api/alerts/summary?host=${encodeURIComponent(host)}&step=${currentStep}`),
         ]);
         setAlerts(list.alerts || list);
         setSummary(summaryData.summary || summaryData);
@@ -25,7 +28,7 @@ export default function AlertsPage() {
     void load();
     const interval = window.setInterval(load, 2500);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [host, currentStep]);
 
   return (
     <DashboardShell title="Alerts Center" subtitle="Live alert feed and severity distribution">
@@ -34,6 +37,16 @@ export default function AlertsPage() {
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
             <div className="text-[10px] uppercase tracking-[0.27em] text-slate-500">High</div>
             <div className="mt-2 font-mono text-3xl font-black text-red-400">{summary.high ?? "—"}</div>
+          </div>
+          <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
+            <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Alert severity distribution</div>
+            <div className="space-y-3">
+              {(["high", "medium", "low"] as const).map((severity) => {
+                const count = Number(summary[severity] || 0);
+                const total = Math.max(Number(summary.high || 0) + Number(summary.medium || 0) + Number(summary.low || 0), 1);
+                return <div key={severity}><div className="flex justify-between text-sm uppercase text-slate-300"><span>{severity}</span><span className="font-mono">{count}</span></div><div className="mt-1 h-2 rounded bg-slate-800"><div className="h-full rounded bg-gradient-to-r from-red-500 to-cyan-500" style={{ width: `${count / total * 100}%` }} /></div></div>;
+              })}
+            </div>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
             <div className="text-[10px] uppercase tracking-[0.27em] text-slate-500">Medium</div>

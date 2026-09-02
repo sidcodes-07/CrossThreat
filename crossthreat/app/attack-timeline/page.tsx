@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../../components/api";
 import { DashboardShell } from "../../components/dashboard-shell";
+import { useReplaySession } from "../../components/replay-session";
 
 export default function AttackTimelinePage() {
-  const [host, setHost] = useState("host-01");
+  const { host, currentStep, setTotalSteps } = useReplaySession();
   const [timeline, setTimeline] = useState<any[]>([]);
   const [details, setDetails] = useState<any[]>([]);
   const [indicators, setIndicators] = useState<any[]>([]);
@@ -15,9 +16,8 @@ export default function AttackTimelinePage() {
   useEffect(() => {
     async function load() {
       try {
-        const hosts = await api<{ hosts: string[] }>("/api/replay/list");
-        const selectedHost = hosts?.hosts?.[0] || host;
-        setHost(selectedHost);
+        if (!host) return;
+        const selectedHost = host;
         const [stageList, detailList, indicatorList, riskList, probs] = await Promise.all([
           api<any[]>(`/api/timeline/${encodeURIComponent(selectedHost)}`),
           api<any[]>(`/api/timeline/${encodeURIComponent(selectedHost)}/details`),
@@ -26,6 +26,7 @@ export default function AttackTimelinePage() {
           api<any[]>(`/api/forecast/${encodeURIComponent(selectedHost)}/transition-probs`),
         ]);
         setTimeline(stageList);
+        setTotalSteps(stageList?.length || 0);
         setDetails(detailList);
         setIndicators(indicatorList);
         setRiskHistory(riskList);
@@ -35,10 +36,10 @@ export default function AttackTimelinePage() {
       }
     }
     void load();
-  }, [host]);
+  }, [host, currentStep, setTotalSteps]);
 
   return (
-    <DashboardShell title="Attack Timeline" subtitle="Stage-by-stage progression and risk transitions">
+    <DashboardShell title="Attack Timeline" subtitle="Stage-by-stage progression and risk transitions" session={host}>
       <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
@@ -58,8 +59,8 @@ export default function AttackTimelinePage() {
         <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
           <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Timeline</div>
           <div className="space-y-4">
-            {timeline.length ? timeline.map((item: any) => (
-              <div key={`${host}-${item.stage}`} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+            {timeline.length ? timeline.map((item: any, index: number) => (
+              <div key={`${host}-timeline-${item.step ?? index}`} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <div className="text-sm uppercase tracking-[0.22em] text-slate-400">{item.stage}</div>
@@ -79,8 +80,8 @@ export default function AttackTimelinePage() {
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
             <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Timeline details</div>
             <div className="space-y-4">
-              {details.length ? details.map((item: any) => (
-                <div key={`${host}-detail-${item.stage}`} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+              {details.length ? details.map((item: any, index: number) => (
+                <div key={`${host}-detail-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                   <div className="flex items-center justify-between">
                     <div className="text-base font-bold text-slate-100">{item.stage}</div>
                     <span className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.2em] ${

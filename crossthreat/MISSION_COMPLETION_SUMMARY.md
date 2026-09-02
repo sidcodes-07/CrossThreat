@@ -97,6 +97,17 @@ python server.py
 
 This is the only active backend entry point. The app listens on port 8000 and serves all dashboard and replay APIs through a single FastAPI application.
 
+If port 8000 is already in use, stop the existing backend or start this process on
+another port:
+
+```powershell
+$env:CROSSTHREAT_PORT = "8001"
+python server.py
+```
+
+The host and port can be configured with `CROSSTHREAT_HOST` and
+`CROSSTHREAT_PORT`; both default to `127.0.0.1` and `8000`.
+
 Endpoints:
 - `GET /api/health` - Health check
 - `GET /api/generalization` - OOD/generalization metrics
