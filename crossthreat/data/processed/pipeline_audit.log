@@ -1,188 +1,147 @@
 
 ================================================================================
-CROSSTHREAT DATA PIPELINE - REAL CIC-IDS2018
+CROSSTHREAT DATA PIPELINE - REAL NF-UNSW-NB15-v3
 ================================================================================
-Start time: 2026-09-01 20:49:49.909315
+Start time: 2026-09-02 19:05:21.171255
 
 ================================================================================
-LOADING REAL CIC-IDS2018 DATASET
+LOADING REAL NF-UNSW-NB15-v3 DATASET
 ================================================================================
 Data directory: C:\CyberShield\crossthreat\data
-Looking in: C:\CyberShield\crossthreat\data\raw
-[OK] Thursday-15-02-2018.csv               2000 rows
-[OK] Wednesday-14-02-2018.csv              2000 rows
-[OK] Thursday-22-02-2018.csv               2000 rows
-[OK] Wednesday-21-02-2018.csv              2000 rows
-[OK] Thursday-01-03-2018.csv               2000 rows
-[OK] Friday-02-03-2018.csv                 2000 rows
-[OK] Wednesday-28-02-2018.csv              2000 rows
-[OK] Tuesday-20-02-2018.csv                2000 rows
-[OK] Friday-16-02-2018.csv                 2000 rows
-[OK] Friday-23-02-2018.csv                 2000 rows
-
-Total rows loaded: 20,000
-Total files loaded: 10
-
-Final dataset shape: (20000, 17)
-
-================================================================================
-LOADING OOD DATASET (CIC-IDS2017)
-================================================================================
-[OK] CIC-IDS2017.csv loaded: 3000 rows
+[OK] NF-UNSW-NB15-v3.csv loaded: 2,365,424 rows
+Columns (55): ['FLOW_START_MILLISECONDS', 'FLOW_END_MILLISECONDS', 'IPV4_SRC_ADDR', 'L4_SRC_PORT', 'IPV4_DST_ADDR', 'L4_DST_PORT', 'PROTOCOL', 'L7_PROTO', 'IN_BYTES', 'IN_PKTS', 'OUT_BYTES', 'OUT_PKTS', 'TCP_FLAGS', 'CLIENT_TCP_FLAGS', 'SERVER_TCP_FLAGS', 'FLOW_DURATION_MILLISECONDS', 'DURATION_IN', 'DURATION_OUT', 'MIN_TTL', 'MAX_TTL', 'LONGEST_FLOW_PKT', 'SHORTEST_FLOW_PKT', 'MIN_IP_PKT_LEN', 'MAX_IP_PKT_LEN', 'SRC_TO_DST_SECOND_BYTES', 'DST_TO_SRC_SECOND_BYTES', 'RETRANSMITTED_IN_BYTES', 'RETRANSMITTED_IN_PKTS', 'RETRANSMITTED_OUT_BYTES', 'RETRANSMITTED_OUT_PKTS', 'SRC_TO_DST_AVG_THROUGHPUT', 'DST_TO_SRC_AVG_THROUGHPUT', 'NUM_PKTS_UP_TO_128_BYTES', 'NUM_PKTS_128_TO_256_BYTES', 'NUM_PKTS_256_TO_512_BYTES', 'NUM_PKTS_512_TO_1024_BYTES', 'NUM_PKTS_1024_TO_1514_BYTES', 'TCP_WIN_MAX_IN', 'TCP_WIN_MAX_OUT', 'ICMP_TYPE', 'ICMP_IPV4_TYPE', 'DNS_QUERY_ID', 'DNS_QUERY_TYPE', 'DNS_TTL_ANSWER', 'FTP_COMMAND_RET_CODE', 'SRC_TO_DST_IAT_MIN', 'SRC_TO_DST_IAT_MAX', 'SRC_TO_DST_IAT_AVG', 'SRC_TO_DST_IAT_STDDEV', 'DST_TO_SRC_IAT_MIN', 'DST_TO_SRC_IAT_MAX', 'DST_TO_SRC_IAT_AVG', 'DST_TO_SRC_IAT_STDDEV', 'Label', 'Attack']
+Label distribution: {'Benign': 2237731, 'Exploits': 42748, 'Fuzzers': 33816, 'Generic': 19651, 'Reconnaissance': 17074, 'DoS': 5980, 'Backdoor': 4659, 'Shellcode': 2381, 'Analysis': 1226, 'Worms': 158}
+Flow time range: 2015-01-22T11:49:36.907000 to 2015-02-18T12:29:24.927000
+No OOD dataset configured: NF-UNSW-NB15-v3 is the official source.
 
 ================================================================================
 COLUMN ANALYSIS
 ================================================================================
 
-Columns (17):
+Columns (58):
 
 Identified columns:
   Label columns: ['Label']
-  Timestamp columns: ['Timestamp']
-  IP/Host columns: ['Src IP', 'Dst IP', 'Dst Port']
-  Feature columns (numeric): 12 features
-    ['Protocol', 'Flow Duration', 'Tot Fwd Pkts', 'Tot Bwd Pkts', 'TotLen Fwd Pkts', 'TotLen Bwd Pkts', 'Flow Byts/s', 'Flow Pkts/s', 'SYN Flag Cnt', 'ACK Flag Cnt', 'PSH Flag Cnt', 'RST Flag Cnt']
+  Timestamp columns: ['TimeWindow']
+  IP/Host columns: ['Host', 'IPV4_SRC_ADDR', 'IPV4_DST_ADDR']
+  Feature columns (numeric): 16 features
+    ['L4_SRC_PORT', 'L4_DST_PORT', 'PROTOCOL', 'L7_PROTO', 'IN_BYTES', 'IN_PKTS', 'OUT_BYTES', 'OUT_PKTS', 'TCP_FLAGS', 'FLOW_DURATION_MILLISECONDS', 'DURATION_IN', 'DURATION_OUT', 'MIN_TTL', 'MAX_TTL', 'LONGEST_FLOW_PKT', 'SHORTEST_FLOW_PKT']
 
 Class distribution (Label):
-  Benign                            17865 ( 89.33%)
-  Infiltration                        423 (  2.12%)
-  Brute Force -Web                    322 (  1.61%)
-  Brute Force -XSS                    312 (  1.56%)
-  Bot                                 266 (  1.33%)
-  DDoS-HOIC                           162 (  0.81%)
-  DoS-Slowloris                       156 (  0.78%)
-  DDoS-LOIC-HTTP                      155 (  0.78%)
-  DoS-Hulk                            142 (  0.71%)
-  Heartbleed                          100 (  0.50%)
-  SQL Injection                        97 (  0.48%)
+  Benign                          2237731 ( 94.60%)
+  Exploits                          42748 (  1.81%)
+  Fuzzers                           33816 (  1.43%)
+  Generic                           19651 (  0.83%)
+  Reconnaissance                    17074 (  0.72%)
+  DoS                                5980 (  0.25%)
+  Backdoor                           4659 (  0.20%)
+  Shellcode                          2381 (  0.10%)
+  Analysis                           1226 (  0.05%)
+  Worms                               158 (  0.01%)
 
 ================================================================================
 CREATING CHRONOLOGICAL 80/20 SPLIT
 ================================================================================
 
-Total samples: 20,000
-Train samples: 16,000 (80.0%)
-Test samples:  4,000 (20.0%)
+Total samples: 2,365,424
+Train samples: 1,892,339 (80.0%)
+Test samples:  473,085 (20.0%)
 
 Split verification:
-  Train index range: 0 to 15999
-  Test index range:  16000 to 19999
+  Train index range: 0 to 1892338
+  Test index range:  1892339 to 2365423
   No overlap: True
 
 ================================================================================
 PREPROCESSING FEATURES
 ================================================================================
 
-Features to preprocess: 12
+Features to preprocess: 16
 
 Replacing infinity values with NaN:
-  train: 75 infinity values
-  test: 19 infinity values
+  train: None
+  test: None
 
 Missing values (train):
-  {'Flow Duration': 80, 'Flow Byts/s': 75}
+  None
 Missing values (test):
-  {'Flow Duration': 28, 'Flow Byts/s': 19}
+  None
 
 Normalizing features (fit on TRAINING data only):
-  Scaler fit on 16000 training samples
-  Applied to 4000 test samples
+  Scaler fit on 1892339 training samples
+  Applied to 473085 test samples
 
 ================================================================================
 ENCODING LABELS
 ================================================================================
 
-Label encoder fit on 11 classes from training data:
-  0: Benign
-  1: Bot
-  2: Brute Force -Web
-  3: Brute Force -XSS
-  4: DDoS-HOIC
-  5: DDoS-LOIC-HTTP
-  6: DoS-Hulk
-  7: DoS-Slowloris
-  8: Heartbleed
-  9: Infiltration
-  10: SQL Injection
+Label encoder fit on 10 classes from training data:
+  0: Analysis
+  1: Backdoor
+  2: Benign
+  3: DoS
+  4: Exploits
+  5: Fuzzers
+  6: Generic
+  7: Reconnaissance
+  8: Shellcode
+  9: Worms
 
 Class distribution after encoding:
-  Train: 11 classes
-  Test: 3 classes
-  OOD: 3 classes
+  Train: 10 classes
+  Test: 10 classes
 
 ================================================================================
 CREATING TEMPORAL WINDOWS
 ================================================================================
 
 Sequence length: 5
-  Grouping by Src IP: 15 hosts
-  Windows created: 15925
-  Input shape: (15925, 5, 12)
-  Target shape: (15925,)
+  Grouping by Host: 40 hosts
+  Windows created: 1892143
+  Input shape: (1892143, 5, 16)
+  Target shape: (1892143,)
 
 Sequence length: 10
-  Grouping by Src IP: 15 hosts
-  Windows created: 15850
-  Input shape: (15850, 10, 12)
-  Target shape: (15850,)
+  Grouping by Host: 40 hosts
+  Windows created: 1891948
+  Input shape: (1891948, 10, 16)
+  Target shape: (1891948,)
 
 Sequence length: 15
-  Grouping by Src IP: 15 hosts
-  Windows created: 15775
-  Input shape: (15775, 15, 12)
-  Target shape: (15775,)
+  Grouping by Host: 40 hosts
+  Windows created: 1891753
+  Input shape: (1891753, 15, 16)
+  Target shape: (1891753,)
 
 ================================================================================
 CREATING TEMPORAL WINDOWS
 ================================================================================
 
 Sequence length: 5
-  Grouping by Src IP: 15 hosts
-  Windows created: 3925
-  Input shape: (3925, 5, 12)
-  Target shape: (3925,)
+  Grouping by Host: 38 hosts
+  Windows created: 472900
+  Input shape: (472900, 5, 16)
+  Target shape: (472900,)
 
 Sequence length: 10
-  Grouping by Src IP: 15 hosts
-  Windows created: 3850
-  Input shape: (3850, 10, 12)
-  Target shape: (3850,)
+  Grouping by Host: 38 hosts
+  Windows created: 472750
+  Input shape: (472750, 10, 16)
+  Target shape: (472750,)
 
 Sequence length: 15
-  Grouping by Src IP: 15 hosts
-  Windows created: 3775
-  Input shape: (3775, 15, 12)
-  Target shape: (3775,)
-
-================================================================================
-CREATING TEMPORAL WINDOWS
-================================================================================
-
-Sequence length: 5
-  Grouping by Src IP: 15 hosts
-  Windows created: 2925
-  Input shape: (2925, 5, 12)
-  Target shape: (2925,)
-
-Sequence length: 10
-  Grouping by Src IP: 15 hosts
-  Windows created: 2850
-  Input shape: (2850, 10, 12)
-  Target shape: (2850,)
-
-Sequence length: 15
-  Grouping by Src IP: 15 hosts
-  Windows created: 2775
-  Input shape: (2775, 15, 12)
-  Target shape: (2775,)
+  Grouping by Host: 38 hosts
+  Windows created: 472619
+  Input shape: (472619, 15, 16)
+  Target shape: (472619,)
 
 ================================================================================
 LEAKAGE VERIFICATION
 ================================================================================
 Index overlap: False
 Train feature mean: 0.0000
-Test feature mean: -0.0936
-Label class overlap: 3 classes
+Test feature mean: 0.0177
+Label class overlap: 10 classes
 [OK] No index overlap detected
 
 ================================================================================
@@ -190,7 +149,8 @@ SAVING ARTIFACTS
 ================================================================================
 [OK] train_df.pkl
 [OK] test_df.pkl
-[OK] ood_df.pkl
+[OK] train_windows.pkl
+[OK] test_windows.pkl
 [OK] scaler.pkl
 [OK] encoder.pkl
 [OK] label_map.pkl
@@ -200,7 +160,5 @@ SAVING ARTIFACTS
 [OK] test_seq5_windows.npz
 [OK] test_seq10_windows.npz
 [OK] test_seq15_windows.npz
-[OK] ood_seq5_windows.npz
-[OK] ood_seq10_windows.npz
-[OK] ood_seq15_windows.npz
 [OK] metadata.json
+[OK] metadata.pkl

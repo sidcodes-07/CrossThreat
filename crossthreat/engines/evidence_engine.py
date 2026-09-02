@@ -22,7 +22,7 @@ class EvidenceEngine:
             
         self.feature_cols = self.metadata_content['feature_cols']
         self.label_map = self.metadata_content['label_mapping']
-        self.inv_label_map = {v: k for k, v in self.label_map.items()}
+        self.inv_label_map = {int(label_id): label for label_id, label in self.label_map.items()}
         
         # Pre-load Baseline Model and fit TreeExplainer
         self.baseline_model_path = os.path.join(processed_dir, "baseline_model.pkl")

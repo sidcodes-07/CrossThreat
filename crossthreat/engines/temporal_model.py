@@ -28,7 +28,8 @@ class HostSequenceDataset(Dataset):
             
             # Extract features and mapped labels
             features = group[feature_cols].values.astype(np.float32)
-            labels = group['Label'].map(label_map).fillna(0).values.astype(np.int64)
+            label_to_id = {label: index for index, label in label_map.items()}
+            labels = group['Label'].map(label_to_id).values.astype(np.int64)
             
             # Build sliding windows
             if len(features) >= seq_len + 1:

@@ -14,7 +14,7 @@ export default function ForecastingPage() {
     async function load() {
       try {
         const hosts = await api<any>("/api/replay/list");
-        const selectedHost = hosts?.hosts?.[0] || host;
+        const selectedHost = Array.isArray(hosts) ? hosts[0] : hosts?.hosts?.[0] || host;
         setHost(selectedHost);
         const [forecast, confidence, evidenceData] = await Promise.all([
           api<any[]>(`/api/forecast/${encodeURIComponent(selectedHost)}/upcoming`),
@@ -29,6 +29,8 @@ export default function ForecastingPage() {
       }
     }
     void load();
+    const interval = window.setInterval(load, 2500);
+    return () => window.clearInterval(interval);
   }, [host]);
 
   return (
@@ -55,7 +57,7 @@ export default function ForecastingPage() {
                       <td className="px-3 py-3 font-mono text-amber-300">{row.confidence}%</td>
                       <td className="px-3 py-3 font-mono text-red-300">{row.risk}</td>
                     </tr>
-                  )) : <tr><td colSpan={4} className="px-3 py-3 text-slate-400">Loading forecast table…</td></tr>}
+                  )) : <tr><td colSpan={4} className="px-3 py-3 text-slate-500">No data available yet</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -64,10 +66,16 @@ export default function ForecastingPage() {
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
             <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Prediction confidence over time</div>
             <div className="h-56 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-              <svg viewBox="0 0 260 180" className="h-full w-full">
-                <path d="M 0 120 L 60 90 L 120 100 L 180 70 L 240 55 L 260 30" stroke="#00D9FF" strokeWidth="3" fill="none" />
-                <path d="M 0 135 L 60 125 L 120 115 L 180 85 L 240 72 L 260 60" stroke="#A855F7" strokeWidth="3" fill="none" />
-              </svg>
+              {confidenceHistory.length ? (
+                <div className="flex h-full items-end gap-2">
+                  {confidenceHistory.map((point: any) => (
+                    <div key={point.step} className="flex flex-1 flex-col items-center gap-2">
+                      <div className="w-full rounded-t bg-cyan-400/80" style={{ height: `${Math.min(Number(point.confidence), 100)}%` }} />
+                      <span className="font-mono text-[9px] text-slate-500">{point.step}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <div className="grid h-full place-items-center text-sm text-slate-500">No data available yet</div>}
             </div>
           </div>
         </div>
@@ -78,9 +86,9 @@ export default function ForecastingPage() {
             {evidence.length ? evidence.map((item: any, index: number) => (
               <div key={`${host}-evidence-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                 <div className="font-semibold text-slate-100">{item.label || "Evidence"}</div>
-                <p className="mt-2 text-slate-300">{item.explanation || item.description || "Model confidence is being reconstructed from stage-attribution metrics and the live evidence stream."}</p>
+                <p className="mt-2 text-slate-300">{item.explanation ?? item.description ?? "No explanation available yet"}</p>
               </div>
-            )) : <div className="text-slate-400">Loading evidence explanation…</div>}
+            )) : <div className="text-slate-500">No data available yet</div>}
           </div>
         </div>
       </div>

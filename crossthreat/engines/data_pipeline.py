@@ -1,22 +1,10 @@
 #!/usr/bin/env python3
-"""
-PHASE 1: DATA PIPELINE
-======================
-
-Build unified data loader with:
-1. Load all 10 CIC-IDS2018 files (real dataset)
-2. Chronological 80/20 split (NO random shuffle)
-3. Temporal windowing (5, 10, 15 sequences)
-4. Feature preprocessing and normalization
-5. OOD preparation (CIC-IDS2017)
-6. Leakage verification
-"""
+"""Build CrossThreat artifacts from the official NF-UNSW-NB15-v3 flow dataset."""
 
 import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.model_selection import train_test_split
 import pickle
 import json
 from datetime import datetime
@@ -40,77 +28,40 @@ class DataPipeline:
         self.audit_log.append(msg)
     
     def load_real_dataset(self) -> pd.DataFrame:
-        """Load all real CIC-IDS2018 files in chronological order."""
+        """Load and normalize the official NF-UNSW-NB15-v3 flow export."""
         
         self.log("\n" + "="*80)
-        self.log("LOADING REAL CIC-IDS2018 DATASET")
+        self.log("LOADING REAL NF-UNSW-NB15-v3 DATASET")
         self.log("="*80)
         
         self.log(f"Data directory: {self.data_dir}")
-        self.log(f"Looking in: {os.path.join(self.data_dir, 'raw')}")
-        
-        # CIC-IDS2018 files in chronological order
-        cic_files = [
-            "Thursday-15-02-2018.csv",
-            "Wednesday-14-02-2018.csv",
-            "Thursday-22-02-2018.csv",
-            "Wednesday-21-02-2018.csv",
-            "Thursday-01-03-2018.csv",
-            "Friday-02-03-2018.csv",
-            "Wednesday-28-02-2018.csv",
-            "Tuesday-20-02-2018.csv",
-            "Friday-16-02-2018.csv",
-            "Friday-23-02-2018.csv",
-        ]
-        
-        frames = []
-        total_rows = 0
-        
-        for fname in cic_files:
-            fpath = os.path.join(self.data_dir, "raw", fname)
-            if not os.path.exists(fpath):
-                self.log(f"[SKIP] File not found: {fname} (checked: {fpath})")
-                continue
-            
-            try:
-                df = pd.read_csv(fpath, low_memory=False)
-                rows = len(df)
-                total_rows += rows
-                self.log(f"[OK] {fname:<35} {rows:>6} rows")
-                frames.append(df)
-            except Exception as e:
-                self.log(f"[ERROR] {fname}: {e}")
-        
-        self.log(f"\nTotal rows loaded: {total_rows:,}")
-        self.log(f"Total files loaded: {len(frames)}")
-        
-        # Concatenate in chronological order
-        if len(frames) == 0:
-            self.log("[FATAL] No files loaded!")
-            raise ValueError("No CIC-IDS2018 files found in data/raw/")
-        
-        dataset = pd.concat(frames, ignore_index=True)
-        self.log(f"\nFinal dataset shape: {dataset.shape}")
-        
+        fpath = os.path.join(self.data_dir, "external", "NF-UNSW-NB15-v3.csv")
+        if not os.path.exists(fpath):
+            raise FileNotFoundError(f"Official dataset not found: {fpath}")
+
+        dataset = pd.read_csv(fpath, low_memory=False)
+        self.log(f"[OK] {os.path.basename(fpath)} loaded: {len(dataset):,} rows")
+        self.log(f"Columns ({len(dataset.columns)}): {dataset.columns.tolist()}")
+        self.log(f"Label distribution: {dataset['Attack'].value_counts(dropna=False).to_dict()}")
+
+        dataset["TimeWindow"] = pd.to_datetime(
+            dataset["FLOW_START_MILLISECONDS"], unit="ms", errors="coerce"
+        )
+        dataset = dataset.dropna(subset=["TimeWindow", "IPV4_SRC_ADDR", "IPV4_DST_ADDR"])
+        dataset["Host"] = dataset["IPV4_SRC_ADDR"].astype(str)
+        dataset["Label"] = dataset["Attack"].fillna("Unknown").astype(str)
+        dataset["Protocol"] = dataset["PROTOCOL"].astype(str)
+        dataset = dataset.sort_values(["TimeWindow", "Host"]).reset_index(drop=True)
+        self.log(
+            f"Flow time range: {dataset['TimeWindow'].min().isoformat()} to "
+            f"{dataset['TimeWindow'].max().isoformat()}"
+        )
         return dataset
     
     def load_ood_dataset(self) -> pd.DataFrame:
-        """Load CIC-IDS2017 for out-of-distribution evaluation."""
-        
-        self.log("\n" + "="*80)
-        self.log("LOADING OOD DATASET (CIC-IDS2017)")
-        self.log("="*80)
-        
-        fpath = os.path.join(self.data_dir, "raw", "CIC-IDS2017.csv")
-        
-        if not os.path.exists(fpath):
-            self.log("[ERROR] CIC-IDS2017.csv not found")
-            return None
-        
-        df = pd.read_csv(fpath, low_memory=False)
-        self.log(f"[OK] CIC-IDS2017.csv loaded: {len(df)} rows")
-        
-        return df
+        """NF-UNSW-NB15-v3 is the sole supported dataset; there is no OOD set."""
+        self.log("No OOD dataset configured: NF-UNSW-NB15-v3 is the official source.")
+        return None
     
     def analyze_columns(self, df: pd.DataFrame) -> Dict:
         """Analyze dataset columns and identify feature/label columns."""
@@ -124,24 +75,19 @@ class DataPipeline:
         for i, col in enumerate(cols, 1):
             print(f"  {i:2}. {col}")
         
-        # Identify column types
-        label_cols = [c for c in cols if 'label' in c.lower() or 'attack' in c.lower() or 'class' in c.lower()]
-        timestamp_cols = [c for c in cols if 'time' in c.lower() or 'timestamp' in c.lower()]
-        ip_cols = [c for c in cols if 'ip' in c.lower() or 'src' in c.lower() or 'dst' in c.lower()]
-        
-        # Feature columns: exclude labels, timestamps, and IPs
-        all_non_label_cols = [c for c in cols if c not in label_cols and c not in timestamp_cols]
-        
-        # Further filter to only numeric columns
-        feature_cols = []
-        for col in all_non_label_cols:
-            if col not in ip_cols:  # Exclude IP columns
-                try:
-                    pd.to_numeric(df[col], errors='coerce')
-                    feature_cols.append(col)
-                except:
-                    pass
-        
+        label_cols = ["Label"]
+        timestamp_cols = ["TimeWindow"]
+        ip_cols = ["Host", "IPV4_SRC_ADDR", "IPV4_DST_ADDR"]
+        feature_cols = [
+            "L4_SRC_PORT", "L4_DST_PORT", "PROTOCOL", "L7_PROTO",
+            "IN_BYTES", "IN_PKTS", "OUT_BYTES", "OUT_PKTS",
+            "TCP_FLAGS", "FLOW_DURATION_MILLISECONDS", "DURATION_IN",
+            "DURATION_OUT", "MIN_TTL", "MAX_TTL", "LONGEST_FLOW_PKT",
+            "SHORTEST_FLOW_PKT",
+        ]
+        missing = [column for column in feature_cols if column not in df.columns]
+        if missing:
+            raise ValueError(f"NF-UNSW-NB15-v3 is missing required numeric features: {missing}")
         self.log(f"\nIdentified columns:")
         self.log(f"  Label columns: {label_cols}")
         self.log(f"  Timestamp columns: {timestamp_cols}")
@@ -150,17 +96,14 @@ class DataPipeline:
         self.log(f"    {feature_cols}")
         
         # Analyze class distribution
-        if label_cols:
-            label_col = label_cols[0]
-            self.log(f"\nClass distribution ({label_col}):")
-            dist = df[label_col].value_counts()
-            for label, count in dist.items():
-                pct = 100 * count / len(df)
-                self.log(f"  {label:<30} {count:>8} ({pct:>6.2f}%)")
+        label_col = "Label"
+        self.log(f"\nClass distribution ({label_col}):")
+        for label, count in df[label_col].value_counts().items():
+            self.log(f"  {label:<30} {count:>8} ({100 * count / len(df):>6.2f}%)")
         
         return {
-            "label_col": label_cols[0] if label_cols else None,
-            "timestamp_col": timestamp_cols[0] if timestamp_cols else None,
+            "label_col": label_col,
+            "timestamp_col": "TimeWindow",
             "feature_cols": feature_cols,
             "ip_cols": ip_cols,
             "all_cols": cols
@@ -217,10 +160,10 @@ class DataPipeline:
             X_sequences = []
             y_targets = []
             
-            # Group by host if available, otherwise use full dataset
-            if 'Src IP' in df.columns:
-                groups = df.groupby('Src IP')
-                self.log(f"  Grouping by Src IP: {len(groups)} hosts")
+            # Group by source host and never allow windows to cross host boundaries.
+            if 'Host' in df.columns:
+                groups = df.groupby('Host', sort=False)
+                self.log(f"  Grouping by Host: {len(groups)} hosts")
             else:
                 groups = [("all", df)]
                 self.log(f"  No host grouping available")
@@ -230,8 +173,8 @@ class DataPipeline:
                     continue
                 
                 # Sort by timestamp if available
-                if 'Timestamp' in df.columns:
-                    group_df = group_df.sort_values('Timestamp')
+                if 'TimeWindow' in df.columns:
+                    group_df = group_df.sort_values('TimeWindow')
                 
                 features = group_df[feature_cols].values.astype(np.float32)
                 labels = group_df[label_col].values
@@ -390,19 +333,19 @@ class DataPipeline:
         """Execute complete data pipeline."""
         
         self.log("\n" + "="*80)
-        self.log("CROSSTHREAT DATA PIPELINE - REAL CIC-IDS2018")
+        self.log("CROSSTHREAT DATA PIPELINE - REAL NF-UNSW-NB15-v3")
         self.log("="*80)
         self.log(f"Start time: {datetime.now()}")
         
         # Step 1: Load datasets
-        cic2018_df = self.load_real_dataset()
-        cic2017_df = self.load_ood_dataset()
+        official_df = self.load_real_dataset()
+        ood_df = self.load_ood_dataset()
         
         # Step 2: Analyze columns
-        col_info = self.analyze_columns(cic2018_df)
+        col_info = self.analyze_columns(official_df)
         
         # Step 3: Chronological split (80/20, NO shuffle)
-        train_df, test_df = self.create_chronological_split(cic2018_df)
+        train_df, test_df = self.create_chronological_split(official_df)
         
         # Step 4: Preprocess features
         train_df, test_df, scaler = self.preprocess_features(
@@ -410,8 +353,8 @@ class DataPipeline:
         )
         
         # Step 5: Encode labels
-        train_df, test_df, cic2017_df, encoder, label_map = self.encode_labels(
-            train_df, test_df, cic2017_df, col_info['label_col']
+        train_df, test_df, ood_df, encoder, label_map = self.encode_labels(
+            train_df, test_df, ood_df, col_info['label_col']
         )
         
         # Step 6: Create temporal windows
@@ -424,9 +367,9 @@ class DataPipeline:
             seq_lengths=[5, 10, 15]
         )
         
-        if cic2017_df is not None:
+        if ood_df is not None:
             ood_windows = self.create_temporal_windows(
-                cic2017_df, col_info['feature_cols'], f"{col_info['label_col']}_encoded",
+                ood_df, col_info['feature_cols'], f"{col_info['label_col']}_encoded",
                 seq_lengths=[5, 10, 15]
             )
         else:
@@ -445,7 +388,7 @@ class DataPipeline:
         artifacts = {
             "train_df": train_df,
             "test_df": test_df,
-            "ood_df": cic2017_df,
+            "ood_df": ood_df,
             "scaler": scaler,
             "encoder": encoder,
             "label_map": label_map,
@@ -463,6 +406,11 @@ class DataPipeline:
                 with open(fpath, 'wb') as f:
                     pickle.dump(artifacts[key], f)
                 self.log(f"[OK] {key}.pkl")
+
+        # Replay and legacy trainers consume the chronological window tables.
+        for key, frame in [("train_windows", train_df), ("test_windows", test_df)]:
+            frame.to_pickle(os.path.join(self.output_dir, f"{key}.pkl"))
+            self.log(f"[OK] {key}.pkl")
         
         # Save scaler and encoder
         for key in ["scaler", "encoder", "label_map"]:
@@ -483,16 +431,19 @@ class DataPipeline:
         # Save metadata
         metadata = {
             "timestamp": datetime.now().isoformat(),
-            "total_rows": len(cic2018_df),
+            "dataset": "NF-UNSW-NB15-v3",
+            "dataset_path": os.path.join(self.data_dir, "external", "NF-UNSW-NB15-v3.csv"),
+            "total_rows": len(official_df),
             "train_rows": len(train_df),
             "test_rows": len(test_df),
-            "ood_rows": len(cic2017_df) if cic2017_df is not None else 0,
+            "ood_rows": 0,
             "feature_cols": col_info['feature_cols'],
             "label_col": col_info['label_col'],
             "num_features": len(col_info['feature_cols']),
             "num_classes": len(encoder.classes_),
             "classes": list(encoder.classes_),
             "label_map": label_map,
+            "label_mapping": label_map,
             "leakage_verified": leakage_results['no_index_overlap']
         }
         
@@ -500,6 +451,19 @@ class DataPipeline:
         with open(metadata_path, 'w') as f:
             json.dump(metadata, f, indent=2)
         self.log(f"[OK] metadata.json")
+        with open(os.path.join(self.output_dir, "metadata.pkl"), "wb") as f:
+            pickle.dump(
+                {
+                    "feature_cols": col_info["feature_cols"],
+                    "label_mapping": label_map,
+                    "dataset": "NF-UNSW-NB15-v3",
+                    "label_col": col_info["label_col"],
+                    "timestamp_col": col_info["timestamp_col"],
+                    "host_col": "Host",
+                },
+                f,
+            )
+        self.log("[OK] metadata.pkl")
         
         # Save audit log
         audit_path = os.path.join(self.output_dir, "pipeline_audit.log")

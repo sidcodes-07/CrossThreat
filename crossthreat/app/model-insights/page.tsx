@@ -15,21 +15,23 @@ export default function ModelInsightsPage() {
           api<any>("/api/models/performance"),
           api<any>("/api/models/feature-importance"),
         ]);
-        setPerformance(modelPerformance);
+        setPerformance(modelPerformance || {});
         setFeatures(featureImportance?.top_features || featureImportance?.features || []);
       } catch (_error) {
         setPerformance({});
       }
     }
     void load();
+    const interval = window.setInterval(load, 2500);
+    return () => window.clearInterval(interval);
   }, []);
 
   const metrics = [
-    { label: "Accuracy", value: performance.accuracy ?? 96.2, color: "text-cyan-300" },
-    { label: "Precision", value: performance.precision ?? 95.7, color: "text-emerald-300" },
-    { label: "Recall", value: performance.recall ?? 93.1, color: "text-amber-300" },
-    { label: "F1", value: performance.f1 ?? 94.4, color: "text-violet-300" },
-    { label: "AUC-ROC", value: performance.auc_roc ?? 97.5, color: "text-red-300" },
+    { label: "Accuracy", value: performance.accuracy, color: "text-cyan-300" },
+    { label: "Precision", value: performance.precision, color: "text-emerald-300" },
+    { label: "Recall", value: performance.recall, color: "text-amber-300" },
+    { label: "F1", value: performance.f1, color: "text-violet-300" },
+    { label: "AUC-ROC", value: performance.auc_roc, color: "text-red-300" },
   ];
 
   return (
@@ -39,7 +41,7 @@ export default function ModelInsightsPage() {
           {metrics.map((metric) => (
             <div key={metric.label} className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
               <div className="text-[10px] uppercase tracking-[0.25em] text-slate-500">{metric.label}</div>
-              <div className={`mt-2 font-mono text-3xl font-black ${metric.color}`}>{metric.value.toFixed(1)}%</div>
+              <div className={`mt-2 font-mono text-3xl font-black ${metric.color}`}>{typeof metric.value === "number" ? `${metric.value.toFixed(1)}%` : "—"}</div>
             </div>
           ))}
         </div>
@@ -52,26 +54,29 @@ export default function ModelInsightsPage() {
                 <div key={feature.name || feature.feature}>
                   <div className="mb-1 flex items-center justify-between text-sm text-slate-300">
                     <span>{feature.name || feature.feature}</span>
-                    <span className="font-mono text-cyan-300">{(feature.importance ?? feature.value ?? 0).toFixed(3)}</span>
+                    <span className="font-mono text-cyan-300">{typeof feature.importance === "number" ? feature.importance.toFixed(3) : "—"}</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                    <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500" style={{ width: `${Math.min((feature.importance ?? feature.value ?? 0) * 100, 100)}%` }} />
+                    <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500" style={{ width: `${Math.min((feature.importance ?? 0) * 100, 100)}%` }} />
                   </div>
                 </div>
-              )) : <div className="text-slate-400">Loading feature importance…</div>}
+              )) : <div className="text-slate-400">No data available yet</div>}
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
             <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Model confidence distribution</div>
             <div className="h-60 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-              <svg viewBox="0 0 260 180" className="h-full w-full">
-                {[40, 60, 82, 100, 120, 138, 150, 170, 182, 200].map((x, idx) => (
-                  <g key={`${x}-${idx}`}>
-                    <rect x={x} y={80 - idx * 5} width="18" height={idx * 7 + 30} fill={idx % 2 === 0 ? "#00D9FF" : "#A855F7"} opacity="0.8" />
-                  </g>
-                ))}
-              </svg>
+              {performance.confidence_distribution?.length ? (
+                <div className="flex h-full items-end gap-2">
+                  {performance.confidence_distribution.map((bucket: any) => (
+                    <div key={bucket.bucket} className="flex flex-1 flex-col items-center gap-2">
+                      <div className="w-full rounded-t bg-cyan-400/80" style={{ height: `${Math.min(Number(bucket.count), 100)}%` }} />
+                      <span className="font-mono text-[9px] text-slate-500">{bucket.bucket}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <div className="grid h-full place-items-center text-sm text-slate-500">No data available yet</div>}
             </div>
           </div>
         </div>

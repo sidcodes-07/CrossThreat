@@ -56,9 +56,9 @@ export default function AlertDetailPage() {
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
             <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Recommended actions</div>
             <ul className="space-y-3 text-sm text-slate-300">
-              {(alert.recommendations || ["Isolate the affected host.", "Review firewall/IDS telemetry.", "Confirm affected processes and traffic session."]).map((item: string, index: number) => (
+              {alert.recommendations?.length ? alert.recommendations.map((item: string, index: number) => (
                 <li key={`${alert.id}-action-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">{item}</li>
-              ))}
+              )) : <li className="text-slate-500">No recommendations available yet</li>}
             </ul>
           </div>
         </div>
@@ -67,26 +67,26 @@ export default function AlertDetailPage() {
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
             <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Details</div>
             <div className="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
-              <div>Source / dest: <span className="font-mono text-cyan-300">{alert.source || "10.0.0.5"} → {alert.destination || "10.0.0.8"}</span></div>
-              <div>Protocol: <span className="font-mono text-cyan-300">{alert.protocol || "TCP"}</span></div>
-              <div>Ports: <span className="font-mono text-cyan-300">{alert.ports || "443 / 8080"}</span></div>
-              <div>Duration: <span className="font-mono text-cyan-300">{alert.duration || "00:14:22"}</span></div>
-              <div>Packets: <span className="font-mono text-cyan-300">{alert.packets || 13425}</span></div>
-              <div>Bytes: <span className="font-mono text-cyan-300">{alert.bytes || "2.4 GB"}</span></div>
-              <div>Risk score: <span className="font-mono text-cyan-300">{alert.risk_score || 88}</span></div>
-              <div>Status: <span className="font-mono text-cyan-300">{alert.status || "Active"}</span></div>
+              <div>Source / dest: <span className="font-mono text-cyan-300">{alert.source ?? "—"} → {alert.destination ?? "—"}</span></div>
+              <div>Protocol: <span className="font-mono text-cyan-300">{alert.protocol ?? "—"}</span></div>
+              <div>Ports: <span className="font-mono text-cyan-300">{alert.ports ?? "—"}</span></div>
+              <div>Duration: <span className="font-mono text-cyan-300">{alert.duration ?? "—"}</span></div>
+              <div>Packets: <span className="font-mono text-cyan-300">{alert.packets ?? "—"}</span></div>
+              <div>Bytes: <span className="font-mono text-cyan-300">{alert.bytes ?? "—"}</span></div>
+              <div>Risk score: <span className="font-mono text-cyan-300">{alert.risk_score ?? "—"}</span></div>
+              <div>Status: <span className="font-mono text-cyan-300">{alert.status ?? "—"}</span></div>
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-5">
             <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-cyan-400">Related events</div>
             <div className="space-y-3">
-              {(alert.related_events || [{ time: "09:41:23", text: "Beaconing pattern from web gateway" }, { time: "09:42:08", text: "Service access anomaly" }]).map((event: any, index: number) => (
+              {alert.related_events?.length ? alert.related_events.map((event: any, index: number) => (
                 <div key={`${alert.id}-event-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                   <div className="font-mono text-xs text-cyan-300">{event.time}</div>
                   <div className="mt-1 text-sm text-slate-300">{event.text}</div>
                 </div>
-              ))}
+              )) : <div className="text-slate-500">No related events available yet</div>}
             </div>
           </div>
         </div>

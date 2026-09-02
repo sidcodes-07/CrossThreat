@@ -10,6 +10,7 @@ import json
 import os
 import pickle
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
@@ -22,6 +23,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.inspection import permutation_importance
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -50,7 +52,7 @@ with open(PROCESSED_DIR / "metadata.pkl", "rb") as f:
     METADATA = pickle.load(f)
 FEATURE_COLS = METADATA["feature_cols"]
 LABEL_MAP = METADATA["label_mapping"]
-INV_LABEL_MAP = {v: k for k, v in LABEL_MAP.items()}
+INV_LABEL_MAP = LABEL_MAP
 
 with open(PROCESSED_DIR / "scaler.pkl", "rb") as f:
     SCALER = pickle.load(f)
@@ -123,6 +125,59 @@ def load_json_file(filename: str) -> Dict[str, Any]:
         return {"error": str(exc)}
 
 
+_FLOW_CACHE: pd.DataFrame | None = None
+
+
+def get_live_flows() -> pd.DataFrame:
+    """Load the current replay flow table once; all dashboard aggregates use this state."""
+    global _FLOW_CACHE
+    if _FLOW_CACHE is None:
+        flow_path = PROCESSED_DIR / "test_windows.pkl"
+        if not flow_path.exists():
+            return pd.DataFrame()
+        columns = [
+            "TimeWindow", "Host", "IPV4_SRC_ADDR", "IPV4_DST_ADDR",
+            "Protocol", "PROTOCOL", "L4_SRC_PORT", "L4_DST_PORT", "IN_BYTES",
+            "OUT_BYTES", "IN_PKTS", "OUT_PKTS", "FLOW_DURATION_MILLISECONDS", "Label", "Attack",
+        ]
+        available = pd.read_pickle(flow_path)
+        columns.extend(FEATURE_COLS)
+        selected_columns = list(dict.fromkeys(column for column in columns if column in available.columns))
+        _FLOW_CACHE = available[selected_columns].copy()
+    return _FLOW_CACHE
+
+
+def get_replay_window(flows: pd.DataFrame) -> pd.DataFrame:
+    if flows.empty:
+        return flows
+    cursor = int(time.time() / 2.5) % len(flows)
+    return flows.iloc[: cursor + 1]
+
+
+def get_dynamic_alerts() -> List[Dict[str, Any]]:
+    flows = get_live_flows()
+    if flows.empty or "Label" not in flows.columns:
+        return []
+    alerts: List[Dict[str, Any]] = []
+    attack_flows = get_replay_window(flows)
+    attack_flows = attack_flows[attack_flows["Label"].astype(str).str.lower() != "benign"].tail(100)
+    for row_index, (_, row) in enumerate(attack_flows.iterrows()):
+        label = str(row.get("Attack", row.get("Label", "Unknown")))
+        timestamp = row.get("TimeWindow")
+        alerts.append({
+            "id": f"AL-{row_index + 1:06d}",
+            "time": timestamp.isoformat() if hasattr(timestamp, "isoformat") else str(timestamp),
+            "type": label,
+            "source": str(row.get("IPV4_SRC_ADDR", row.get("Host", "Unknown"))),
+            "destination": str(row.get("IPV4_DST_ADDR", "Unknown")),
+            "severity": "High" if label.lower() not in {"benign", "normal"} else "Low",
+            "status": "Active",
+            "protocol": str(row.get("PROTOCOL", "Unknown")),
+            "risk_score": 100 if label.lower() not in {"benign", "normal"} else 0,
+        })
+    return alerts
+
+
 @app.get("/api/health")
 def api_health() -> Dict[str, Any]:
     return {
@@ -167,7 +222,7 @@ def get_replay_hosts() -> List[str]:
 @app.get("/api/replay/host/{host_ip}")
 def get_host_sequence(host_ip: str) -> Dict[str, Any]:
     test_df = pd.read_pickle(PROCESSED_DIR / "test_windows.pkl")
-    host_windows = test_df[test_df["Host"] == host_ip].sort_values("TimeWindow").reset_index(drop=True)
+    host_windows = test_df[test_df["Host"] == host_ip].sort_values("TimeWindow").tail(64).reset_index(drop=True)
 
     if host_windows.empty:
         raise HTTPException(status_code=404, detail=f"No replay data for host {host_ip}.")
@@ -199,13 +254,17 @@ def get_host_sequence(host_ip: str) -> Dict[str, Any]:
         baseline_res = CURRENT_CLASSIFIER.predict_state(raw_row_current)
         baseline_pred = baseline_res["state"]
         baseline_prob = float(baseline_res["probabilities"].get(baseline_pred, 0.0))
-        baseline_shap = EVIDENCE_ENGINE.explain_baseline(raw_row_current)
-        baseline_shap_top = [{"feature": feature, "value": float(value)} for feature, value in baseline_shap[:5]]
+        baseline_shap_top = []
         current_stage_res = STAGE_MAPPER.resolve_stage(baseline_pred, raw_row_current)
 
         input_seq = X_scaled[t - seq_len : t]
-        lstm_attributions, forecast_label, forecast_prob = EVIDENCE_ENGINE.explain_temporal(LSTM_MODEL, input_seq)
-        lstm_attributions_top = [{"feature": feature, "value": float(value)} for feature, value in lstm_attributions[:5]]
+        with torch.no_grad():
+            logits = LSTM_MODEL(torch.tensor(input_seq, dtype=torch.float32).unsqueeze(0))
+            probabilities = torch.softmax(logits, dim=1)[0]
+        forecast_class = int(torch.argmax(probabilities).item())
+        forecast_label = INV_LABEL_MAP[forecast_class]
+        forecast_prob = float(probabilities[forecast_class].item())
+        lstm_attributions_top = []
 
         actual_future_label = str_labels[t]
         actual_future_time = disp_ts[t]
@@ -281,7 +340,7 @@ def get_current_state() -> Dict[str, Any]:
         hosts = get_replay_hosts()
     except Exception:
         hosts = []
-    host_ip = hosts[0] if hosts else "10.0.0.5"
+    host_ip = hosts[0] if hosts else ""
     try:
         replay = get_host_sequence(host_ip)
     except HTTPException:
@@ -290,16 +349,16 @@ def get_current_state() -> Dict[str, Any]:
     steps = replay.get("steps", [])
     if not steps:
         return {
-            "current_stage": "Monitoring",
-            "threat_level": "Low",
+            "current_stage": "—",
+            "threat_level": "—",
             "risk_score": 0.0,
-            "next_stage_forecast": "Reconnaissance",
+            "next_stage_forecast": "—",
             "probability": 0.0,
             "alternative_outcomes": [],
             "host": host_ip,
         }
 
-    latest = steps[-1]
+    latest = steps[int(time.time() / 2.5) % len(steps)]
     forecast_probability = float(latest.get("forecast_probability", 0.0))
     alternative = []
     for step in steps[-5:]:
@@ -431,11 +490,7 @@ def get_evidence(forecast_id: str) -> List[Dict[str, Any]]:
         replay = {"steps": []}
     steps = replay.get("steps", [])
     if not steps:
-        return [{
-            "label": "Replay evidence",
-            "description": "No evidence is available from the current host replay window.",
-            "explanation": "The live model has not produced a confident forecast for this host. Confidence remains conservative until stronger in-window features appear.",
-        }]
+        return []
     latest = steps[-1]
     evidence_items = []
     for feature in latest.get("forecast_attribution", [])[:3]:
@@ -445,178 +500,214 @@ def get_evidence(forecast_id: str) -> List[Dict[str, Any]]:
             "description": f"Feature {feature.get('feature', 'traffic_volume')} strongly informs the {latest.get('forecast_next_state', 'Benign')} transition signal.",
             "explanation": f"This feature contributes to a {float(latest.get('forecast_probability', 0.0)) * 100:.1f}% confidence estimate for the forecasted transition.",
         })
-    return evidence_items or [{
-        "label": "Transition confidence",
-        "description": "Probability is based on the sequence of real flow and timing features observed on the host.",
-        "explanation": "The model is using the most recent packet volume and timing window to estimate the next attack stage.",
-    }]
+    return evidence_items
 
 
 @app.get("/api/network/topology")
 def get_network_topology() -> Dict[str, Any]:
-    hosts = get_replay_hosts()
+    flows = get_live_flows()
+    if flows.empty:
+        return {"nodes": [], "edges": [], "summary": {"total_flows": 0, "active_connections": 0, "bytes": 0, "peak": 0}}
+    flows = get_replay_window(flows)
+    hosts = pd.unique(pd.concat([flows["IPV4_SRC_ADDR"], flows["IPV4_DST_ADDR"]], ignore_index=True))
     nodes = []
-    for idx, host_ip in enumerate(hosts[:6]):
+    for idx, host_ip in enumerate(hosts[:30]):
+        host_flows = flows[(flows["IPV4_SRC_ADDR"] == host_ip) | (flows["IPV4_DST_ADDR"] == host_ip)]
         nodes.append({
-            "id": host_ip,
+            "id": str(host_ip),
             "label": host_ip.split(".")[-1] if "." in host_ip else f"H{idx + 1}",
-            "x": 20 + ((idx % 3) * 28) + 12,
-            "y": 20 + ((idx // 3) * 28) + 18,
-            "severity": "high" if idx == 0 else "medium" if idx <= 2 else "low",
+            "x": f"{12 + ((idx % 5) * 19)}%",
+            "y": f"{18 + ((idx // 5) * 16)}%",
+            "severity": "high" if host_flows["Label"].astype(str).str.lower().ne("benign").any() else "low",
         })
     edges = []
-    for idx in range(1, len(nodes)):
+    pair_columns = ["IPV4_SRC_ADDR", "IPV4_DST_ADDR"]
+    for idx, pair in enumerate(flows.groupby(pair_columns, dropna=False).size().nlargest(100).index):
         edges.append({
-            "source": nodes[0]["id"],
-            "target": nodes[idx]["id"],
-            "value": 80 - idx * 8,
-            "severity": "high" if idx == 1 else "medium",
+            "source": str(pair[0]),
+            "target": str(pair[1]),
+            "value": int(flows[(flows["IPV4_SRC_ADDR"] == pair[0]) & (flows["IPV4_DST_ADDR"] == pair[1])].shape[0]),
+            "severity": "medium",
         })
+    byte_columns = [column for column in ["IN_BYTES", "OUT_BYTES"] if column in flows.columns]
+    total_bytes = float(flows[byte_columns].fillna(0).sum().sum()) if byte_columns else 0.0
     return {
         "nodes": nodes,
         "edges": edges,
         "summary": {
-            "total_flows": 1842,
-            "active_connections": 146,
-            "bytes": "2.7 GB",
-            "peak": "96%",
+            "total_flows": int(len(flows)),
+            "active_connections": int(flows[pair_columns].drop_duplicates().shape[0]),
+            "bytes": round(total_bytes, 2),
+            "peak": int(flows.groupby("TimeWindow").size().max()) if "TimeWindow" in flows.columns else 0,
         },
     }
 
 
 @app.get("/api/network/protocol-breakdown")
 def get_protocol_breakdown() -> List[Dict[str, Any]]:
-    return [
-        {"protocol": "TCP", "percent": 54},
-        {"protocol": "UDP", "percent": 20},
-        {"protocol": "ICMP", "percent": 12},
-        {"protocol": "HTTP", "percent": 10},
-        {"protocol": "DNS", "percent": 4},
-    ]
+    flows = get_live_flows()
+    if flows.empty or "Protocol" not in flows.columns:
+        return []
+    counts = get_replay_window(flows)["Protocol"].astype(str).value_counts()
+    total = int(counts.sum())
+    return [{"protocol": protocol, "percent": round(float(count / total * 100), 2), "flows": int(count)} for protocol, count in counts.items()]
 
 
 @app.get("/api/network/top-talkers")
 def get_top_talkers() -> List[Dict[str, Any]]:
-    hosts = get_replay_hosts()
+    flows = get_live_flows()
+    if flows.empty:
+        return []
+    flows = get_replay_window(flows)
     talkers = []
-    for idx, host_ip in enumerate(hosts[:5]):
+    for idx, (host_ip, group) in enumerate(flows.groupby("Host").size().nlargest(10).items()):
         talkers.append({
-            "host": host_ip,
-            "flows": 240 + idx * 40,
-            "bytes": f"{1.4 + idx * 0.7:.1f} GB",
-            "risk": 58 + idx * 8,
+            "host": str(host_ip),
+            "flows": int(group),
+            "bytes": float(flows.loc[flows["Host"] == host_ip, ["IN_BYTES", "OUT_BYTES"]].fillna(0).sum().sum()),
+            "risk": int(flows.loc[flows["Host"] == host_ip, "Label"].astype(str).str.lower().ne("benign").mean() * 100),
         })
     return talkers
 
 
 @app.get("/api/network/top-pairs")
 def get_top_pairs() -> List[Dict[str, Any]]:
-    return [
-        {"source": "10.0.0.5", "dest": "10.0.0.8", "protocol": "TCP", "bytes": "1.42 GB", "packets": 148360},
-        {"source": "10.0.0.12", "dest": "10.0.0.5", "protocol": "HTTP", "bytes": "842 MB", "packets": 89240},
-        {"source": "10.0.0.27", "dest": "10.0.0.18", "protocol": "UDP", "bytes": "618 MB", "packets": 67210},
-        {"source": "10.0.0.9", "dest": "10.0.0.13", "protocol": "DNS", "bytes": "243 MB", "packets": 42580},
-    ]
+    flows = get_live_flows()
+    if flows.empty:
+        return []
+    flows = get_replay_window(flows)
+    protocol_column = "Protocol" if "Protocol" in flows.columns else "PROTOCOL"
+    rows = []
+    for (source, destination, protocol), group in flows.groupby(["IPV4_SRC_ADDR", "IPV4_DST_ADDR", protocol_column], dropna=False):
+        rows.append({
+            "source": str(source),
+            "dest": str(destination),
+            "protocol": str(protocol),
+            "bytes": float(group[["IN_BYTES", "OUT_BYTES"]].fillna(0).sum().sum()),
+            "packets": int(group[["IN_PKTS", "OUT_PKTS"]].fillna(0).sum().sum()),
+        })
+    return sorted(rows, key=lambda row: row["bytes"], reverse=True)[:20]
 
 
 @app.get("/api/alerts")
 def get_alerts() -> Dict[str, Any]:
-    alerts = [
-        {"id": "AL-401", "time": "09:41:23", "type": "Credential Stuffing", "source": "10.0.0.5", "severity": "High", "status": "Active"},
-        {"id": "AL-402", "time": "09:42:08", "type": "Port Scan", "source": "10.0.0.21", "severity": "Medium", "status": "Acknowledged"},
-        {"id": "AL-403", "time": "09:43:02", "type": "Beaconing", "source": "10.0.0.9", "severity": "Low", "status": "Resolved"},
-    ]
-    return {"alerts": alerts}
+    return {"alerts": get_dynamic_alerts()}
 
 
 @app.get("/api/alerts/summary")
 def get_alert_summary() -> Dict[str, Any]:
-    summary = {"high": 12, "medium": 18, "low": 9}
-    return {"summary": summary}
+    alerts = get_dynamic_alerts()
+    return {"summary": {severity.lower(): sum(1 for alert in alerts if alert["severity"] == severity) for severity in ("High", "Medium", "Low")}}
 
 
 @app.get("/api/alerts/{alert_id}/details")
 def get_alert_details(alert_id: str) -> Dict[str, Any]:
+    alert = next((item for item in get_dynamic_alerts() if item["id"] == alert_id), None)
+    if alert is None:
+        raise HTTPException(status_code=404, detail=f"Alert {alert_id} not found")
+    flows = get_live_flows()
+    source_flows = flows[flows["IPV4_SRC_ADDR"].astype(str) == alert["source"]] if not flows.empty else flows
+    byte_columns = [column for column in ("IN_BYTES", "OUT_BYTES") if column in source_flows.columns]
+    packet_columns = [column for column in ("IN_PKTS", "OUT_PKTS") if column in source_flows.columns]
     return {
-        "id": alert_id,
-        "alert_type": "Credential Stuffing",
-        "type": "Credential Stuffing",
-        "severity": "High",
-        "source": "10.0.0.5",
-        "destination": "10.0.0.8",
-        "protocol": "TCP",
-        "ports": "443 / 8080",
-        "duration": "00:14:22",
-        "packets": 13425,
-        "bytes": "2.4 GB",
-        "risk_score": 89,
-        "status": "Active",
-        "description": "Repeated failed authentication attempts and elevated outbound session activity indicate credential stuffing against the web-tier login service.",
-        "recommendations": [
-            "Isolate the host from access-tier segments and review active authentication logs.",
-            "Apply rate limiting and multi-factor challenge enforcement to the exposed service.",
-            "Inspect lateral movement indicators and recent outbound connections for synchronized tooling.",
-        ],
-        "related_events": [
-            {"time": "09:41:23", "text": "High-volume login failures from the same source IP"},
-            {"time": "09:42:05", "text": "Connection burst to the application load balancer"},
-            {"time": "09:42:44", "text": "Anomalous session creation on the internal SSO proxy"},
-        ],
+        **alert,
+        "alert_type": alert["type"],
+        "ports": sorted({str(port) for port in source_flows["L4_DST_PORT"].dropna()}) if "L4_DST_PORT" in source_flows else [],
+        "duration": float(source_flows["FLOW_DURATION_MILLISECONDS"].sum()) if "FLOW_DURATION_MILLISECONDS" in source_flows else 0,
+        "packets": int(source_flows[packet_columns].fillna(0).sum().sum()) if packet_columns else 0,
+        "bytes": float(source_flows[byte_columns].fillna(0).sum().sum()) if byte_columns else 0,
+        "description": f"Observed {alert['type']} activity for source {alert['source']} in the current replay window.",
+        "recommendations": [f"Investigate {alert['type']} activity on {alert['source']}.", "Review related flow records and isolate the host if the signal persists."],
+        "related_events": [{"time": alert["time"], "text": f"{alert['type']} flow observed from {alert['source']}"}],
     }
 
 
 @app.get("/api/models/performance")
 def get_model_performance() -> Dict[str, Any]:
-    evaluation = load_json_file("mission_e_comprehensive_evaluation.json")
-    results = {
-        "accuracy": float(evaluation.get("test_results", {}).get("accuracy", 0.96) * 100),
-        "precision": float(evaluation.get("test_results", {}).get("precision", 0.95) * 100),
-        "recall": float(evaluation.get("test_results", {}).get("attack_recall", 0.93) * 100),
-        "f1": float(evaluation.get("test_results", {}).get("f1", 0.94) * 100),
-        "auc_roc": float(evaluation.get("test_results", {}).get("auc_roc", 0.97) * 100),
-    }
+    evaluation = load_json_file("nf_unsw_model_performance.json")
+    if evaluation.get("error"):
+        raise HTTPException(status_code=404, detail="NF-UNSW-NB15-v3 model performance not found")
+    test_results = evaluation.get("test_results", {})
+    if "classification_report" in evaluation:
+        report = evaluation["classification_report"]
+        return {
+            "accuracy": float(evaluation.get("accuracy", 0) * 100),
+            "precision": float(report.get("macro avg", {}).get("precision", 0) * 100),
+            "recall": float(report.get("macro avg", {}).get("recall", 0) * 100),
+            "f1": float(report.get("macro avg", {}).get("f1-score", 0) * 100),
+        }
+    results: Dict[str, Any] = {}
+    if "accuracy" in test_results:
+        results["accuracy"] = float(test_results["accuracy"] * 100)
+    if "precision" in test_results:
+        results["precision"] = float(np.mean(test_results["precision"]) * 100) if isinstance(test_results["precision"], list) else float(test_results["precision"] * 100)
+    if "recall" in test_results:
+        results["recall"] = float(np.mean(test_results["recall"]) * 100) if isinstance(test_results["recall"], list) else float(test_results["recall"] * 100)
+    if "f1" in test_results:
+        results["f1"] = float(np.mean(test_results["f1"]) * 100) if isinstance(test_results["f1"], list) else float(test_results["f1"] * 100)
+    probabilities = []
+    for host_ip in get_replay_hosts()[:20]:
+        replay = get_host_sequence(host_ip)
+        probabilities.extend(float(step.get("forecast_probability", 0.0)) * 100 for step in replay.get("steps", []))
+    if probabilities:
+        bins = np.linspace(0, 100, 11)
+        counts, _ = np.histogram(probabilities, bins=bins)
+        results["confidence_distribution"] = [
+            {"bucket": f"{int(bins[index])}-{int(bins[index + 1])}", "count": int(count)}
+            for index, count in enumerate(counts)
+        ]
     return results
 
 
 @app.get("/api/models/feature-importance")
 def get_model_feature_importance() -> Dict[str, Any]:
-    importance_data = load_json_file("mission_g_feature_importance.json")
-    if isinstance(importance_data, dict) and importance_data.get("top_features"):
-        return importance_data
-    features = [
-        {"name": "flow_count", "importance": 0.515},
-        {"name": "duration_sum", "importance": 0.421},
-        {"name": "fwd_pkts_sum", "importance": 0.388},
-        {"name": "byte_rate", "importance": 0.362},
-        {"name": "ack_flag_sum", "importance": 0.265},
-        {"name": "rst_flag_sum", "importance": 0.172},
-    ]
-    return {"top_features": features}
+    flows = get_live_flows()
+    if flows.empty:
+        return {"top_features": []}
+    feature_frame = flows[FEATURE_COLS].replace([np.inf, -np.inf], np.nan).fillna(0)
+    labels = flows["Label"].map({label: index for index, label in LABEL_MAP.items()})
+    valid = labels.notna()
+    if not valid.any():
+        return {"top_features": []}
+    sample = feature_frame.loc[valid].tail(500)
+    target = labels.loc[valid].tail(500).astype(int)
+    model = CURRENT_CLASSIFIER.model
+    result = permutation_importance(model, SCALER.transform(sample.to_numpy()), target, n_repeats=1, random_state=42, n_jobs=1)
+    ranked = sorted(zip(FEATURE_COLS, result.importances_mean), key=lambda item: item[1], reverse=True)[:6]
+    return {"dataset": "NF-UNSW-NB15-v3", "top_features": [{"name": name, "importance": float(value)} for name, value in ranked]}
 
 
 @app.get("/api/reports/summary")
 def get_reports_summary() -> Dict[str, Any]:
+    alerts = get_dynamic_alerts()
     return {
         "summary": {
-            "total_attacks": 128,
-            "high_severity": 34,
-            "blocked_attacks": 94,
-            "avg_response_time": "08m",
+            "total_attacks": len(alerts),
+            "high_severity": sum(1 for alert in alerts if alert["severity"] == "High"),
+            "blocked_attacks": sum(1 for alert in alerts if alert["status"] == "Resolved"),
+            "avg_response_time": 0,
         }
     }
 
 
 @app.get("/api/reports/attack-types")
 def get_attack_types() -> Dict[str, Any]:
-    return {
-        "attack_types": [
-            {"type": "Credential Stuffing", "value": 28},
-            {"type": "Port Scan", "value": 22},
-            {"type": "Beaconing", "value": 19},
-            {"type": "Bot Activity", "value": 17},
-            {"type": "Data Exfiltration", "value": 14},
-        ]
-    }
+    alerts = get_dynamic_alerts()
+    counts: Dict[str, int] = {}
+    for alert in alerts:
+        counts[alert["type"]] = counts.get(alert["type"], 0) + 1
+    total = max(len(alerts), 1)
+    return {"attack_types": [{"type": label, "value": round(count / total * 100, 2), "count": count} for label, count in counts.items()]}
+
+
+@app.get("/api/reports/attacks-over-time")
+def get_attacks_over_time() -> Dict[str, Any]:
+    alerts = get_dynamic_alerts()
+    counts: Dict[str, int] = {}
+    for alert in alerts:
+        period = str(alert["time"])[:13]
+        counts[period] = counts.get(period, 0) + 1
+    return {"attacks_over_time": [{"period": period, "count": count} for period, count in sorted(counts.items())]}
 
 
 
@@ -641,14 +732,14 @@ def get_label_audit() -> Dict[str, Any]:
         "global_label_counts": global_counts,
         "metadata_label_mapping": LABEL_MAP,
         "files": file_info,
-        "data_source_note": "This project uses the prepared CIC-IDS2018 feature windows under data/processed, not raw CSV synthesis.",
+        "data_source_note": "This project uses prepared NF-UNSW-NB15-v3 feature windows under data/processed.",
     }
 
 
 @app.get("/api/reproducibility")
 def get_reproducibility() -> Dict[str, Any]:
     return {
-        "data_source": "CSE-CIC-IDS2018 processed windows",
+        "data_source": "NF-UNSW-NB15-v3 processed windows",
         "features": FEATURE_COLS,
         "feature_count": len(FEATURE_COLS),
         "window_size": "30 seconds",

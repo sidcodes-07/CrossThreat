@@ -42,3 +42,30 @@ next-env.d.ts
 
 # Python virtual environment
 .venv/
+
+# Large external datasets
+crossthreat/data/external/NF-UNSW-NB15-v3.csv
+
+# Local Python environments
+.venv/
+engines/.venv/
+
+# Next.js build output.next/
+
+
+crossthreat/data/processed/train_seq15_windows.npz	
+crossthreat/data/processed/baseline_model.pkl	
+crossthreat/data/processed/test_df.pkl		
+crossthreat/data/external/NF-UNSW-NB15-v3.csv		
+crossthreat/data/processed/train_df.pkl
+
+
+crossthreat/data/processed/*.pkl
+crossthreat/data/processed/*.npz
+crossthreat/data/external/*.csv
+
+data/processed/*.pkl
+data/processed/*.npz
+data/processed/*.pt
+data/processed/*.pth
+data/external/*.csv

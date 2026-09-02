@@ -23,6 +23,8 @@ export default function AlertsPage() {
       }
     }
     void load();
+    const interval = window.setInterval(load, 2500);
+    return () => window.clearInterval(interval);
   }, []);
 
   return (
@@ -31,15 +33,15 @@ export default function AlertsPage() {
         <div className="grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
             <div className="text-[10px] uppercase tracking-[0.27em] text-slate-500">High</div>
-            <div className="mt-2 font-mono text-3xl font-black text-red-400">{summary.high ?? 12}</div>
+            <div className="mt-2 font-mono text-3xl font-black text-red-400">{summary.high ?? "—"}</div>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
             <div className="text-[10px] uppercase tracking-[0.27em] text-slate-500">Medium</div>
-            <div className="mt-2 font-mono text-3xl font-black text-amber-400">{summary.medium ?? 18}</div>
+            <div className="mt-2 font-mono text-3xl font-black text-amber-400">{summary.medium ?? "—"}</div>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
             <div className="text-[10px] uppercase tracking-[0.27em] text-slate-500">Low</div>
-            <div className="mt-2 font-mono text-3xl font-black text-emerald-400">{summary.low ?? 9}</div>
+            <div className="mt-2 font-mono text-3xl font-black text-emerald-400">{summary.low ?? "—"}</div>
           </div>
         </div>
 

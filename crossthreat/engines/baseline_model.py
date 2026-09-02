@@ -1,9 +1,10 @@
 import os
 import pickle
 import pandas as pd
+import json
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 def load_data(processed_dir="c:/CyberShield/crossthreat/data/processed"):
     with open(os.path.join(processed_dir, "metadata.pkl"), "rb") as f:
@@ -20,19 +21,18 @@ def train_baseline():
     
     feature_cols = metadata['feature_cols']
     label_map = metadata['label_mapping']
+    label_to_id = {label: index for index, label in label_map.items()}
     
     # Map labels to numeric IDs
     X_train = train_df[feature_cols].values
-    y_train = train_df['Label'].map(label_map).values
+    y_train = train_df['Label'].map(label_to_id).values
     
     X_test = test_df[feature_cols].values
-    y_test = test_df['Label'].map(label_map).values
+    y_test = test_df['Label'].map(label_to_id).values
     
     # Check if there are unmapped labels and handle them
     if np.isnan(y_train).any() or np.isnan(y_test).any():
-        print("Warning: Some labels were not found in the metadata label mapping. Filling with 0 (Benign).")
-        y_train = np.nan_to_num(y_train, nan=0).astype(int)
-        y_test = np.nan_to_num(y_test, nan=0).astype(int)
+        raise ValueError("NF-UNSW-NB15 labels do not match metadata label_mapping.")
     else:
         y_train = y_train.astype(int)
         y_test = y_test.astype(int)
@@ -46,7 +46,7 @@ def train_baseline():
     y_pred_proba = clf.predict_proba(X_test)
     
     # Reverse mapping for visualization
-    inv_label_map = {v: k for k, v in label_map.items()}
+    inv_label_map = label_map
     unique_labels_test = np.unique(y_test)
     target_names = [inv_label_map[l] for l in unique_labels_test]
     
@@ -70,6 +70,22 @@ def train_baseline():
     with open(model_path, "wb") as f:
         pickle.dump(clf, f)
     print(f"\nModel saved to {model_path}")
+
+    report_path = os.path.join(os.path.dirname(model_path), "nf_unsw_model_performance.json")
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "dataset": "NF-UNSW-NB15-v3",
+                "model": "RandomForestClassifier",
+                "accuracy": float(accuracy_score(y_test, y_pred)),
+                "classification_report": classification_report(
+                    y_test, y_pred, labels=unique_labels_test, target_names=target_names, output_dict=True
+                ),
+            },
+            f,
+            indent=2,
+        )
+    print(f"Metrics saved to {report_path}")
     
     # Print overall accuracy
     accuracy = (y_pred == y_test).mean()
@@ -90,7 +106,7 @@ class CurrentStateClassifier:
             
         self.feature_cols = self.metadata['feature_cols']
         self.label_map = self.metadata['label_mapping']
-        self.inv_label_map = {v: k for k, v in self.label_map.items()}
+        self.inv_label_map = {int(label_id): label for label_id, label in self.label_map.items()}
         
     def predict_state(self, window_features):
         """

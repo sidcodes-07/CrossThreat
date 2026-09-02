@@ -17,7 +17,7 @@ export default function NetworkMonitorPage() {
           api<any>("/api/network/protocol-breakdown"),
           api<any>("/api/network/top-pairs"),
         ]);
-        setTopology(network);
+        setTopology(network || { nodes: [], edges: [] });
         setProtocolBreakdown(protocol);
         setTopPairs(pairs);
       } catch (_error) {
@@ -25,6 +25,8 @@ export default function NetworkMonitorPage() {
       }
     }
     void load();
+    const interval = window.setInterval(load, 2500);
+    return () => window.clearInterval(interval);
   }, []);
 
   return (
@@ -63,19 +65,19 @@ export default function NetworkMonitorPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                   <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Total flows</div>
-                  <div className="mt-2 font-mono text-2xl font-black text-cyan-300">{topology.summary?.total_flows ?? 1842}</div>
+                  <div className="mt-2 font-mono text-2xl font-black text-cyan-300">                  {topology.summary?.total_flows ?? "—"}</div>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                   <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Active connections</div>
-                  <div className="mt-2 font-mono text-2xl font-black text-violet-300">{topology.summary?.active_connections ?? 146}</div>
+                  <div className="mt-2 font-mono text-2xl font-black text-violet-300">                  {topology.summary?.active_connections ?? "—"}</div>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                   <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Bytes</div>
-                  <div className="mt-2 font-mono text-xl font-black text-emerald-300">{topology.summary?.bytes ?? "2.7 GB"}</div>
+                  <div className="mt-2 font-mono text-xl font-black text-emerald-300">                  {topology.summary?.bytes ?? "—"}</div>
                 </div>
                 <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
                   <div className="text-[10px] uppercase tracking-[0.24em] text-slate-500">Peak</div>
-                  <div className="mt-2 font-mono text-xl font-black text-red-300">{topology.summary?.peak ?? "96%"}</div>
+                  <div className="mt-2 font-mono text-xl font-black text-red-300">                  {topology.summary?.peak ?? "—"}</div>
                 </div>
               </div>
             </div>

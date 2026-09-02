@@ -45,7 +45,7 @@ export function DashboardShell({
   }, []);
 
   const dataSource = "Network Traffic Replay";
-  const dataset = "CIC-IDS2018 Replay";
+  const dataset = "NF-UNSW-NB15-v3 Replay";
   const session = "host-01";
 
   return (

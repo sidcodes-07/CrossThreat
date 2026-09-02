@@ -47,11 +47,11 @@ export default function AttackTimelinePage() {
           </div>
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
             <div className="text-[10px] uppercase tracking-[0.27em] text-slate-500">Current stage</div>
-            <div className="mt-2 text-xl font-bold text-amber-300">{details[0]?.stage || "Reconnaissance"}</div>
+            <div className="mt-2 text-xl font-bold text-amber-300">{details[0]?.stage ?? "—"}</div>
           </div>
           <div className="rounded-2xl border border-slate-800 bg-[#111827]/90 p-4">
             <div className="text-[10px] uppercase tracking-[0.27em] text-slate-500">Risk score</div>
-            <div className="mt-2 font-mono text-3xl font-black text-red-400">{Math.round(riskHistory[riskHistory.length - 1]?.risk_score ?? 78)}%</div>
+            <div className="mt-2 font-mono text-3xl font-black text-red-400">{riskHistory.length ? `${Math.round(riskHistory[riskHistory.length - 1].risk_score)}%` : "—"}</div>
           </div>
         </div>
 
@@ -71,7 +71,7 @@ export default function AttackTimelinePage() {
                   </div>
                 </div>
               </div>
-            )) : <div className="text-slate-400">Loading stage progression…</div>}
+            )) : <div className="text-slate-500">No data available yet</div>}
           </div>
         </div>
 
@@ -86,7 +86,7 @@ export default function AttackTimelinePage() {
                     <span className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.2em] ${
                       item.risk >= 75 ? "bg-red-500/10 text-red-300" : item.risk >= 45 ? "bg-amber-500/10 text-amber-300" : "bg-emerald-500/10 text-emerald-300"
                     }`}>
-                      {item.severity || "Medium"}
+                      {item.severity ?? "—"}
                     </span>
                   </div>
                   <div className="mt-3 grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
@@ -97,7 +97,7 @@ export default function AttackTimelinePage() {
                   </div>
                   <p className="mt-3 text-sm text-slate-400">{item.description}</p>
                 </div>
-              )) : <div className="text-slate-400">Loading details…</div>}
+              )) : <div className="text-slate-500">No data available yet</div>}
             </div>
           </div>
 
