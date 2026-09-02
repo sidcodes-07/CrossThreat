@@ -69,3 +69,5 @@ data/processed/*.npz
 data/processed/*.pt
 data/processed/*.pth
 data/external/*.csv
+data/processed/*.pt
+data/processed/*.pth
