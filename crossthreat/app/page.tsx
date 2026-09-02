@@ -2,53 +2,29 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col justify-center items-center p-6 text-zinc-100 font-sans">
-      {/* Background radial glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(244,63,94,0.08)_0,transparent_60%)] pointer-events-none"></div>
-
-      <div className="max-w-xl text-center space-y-8 relative z-10">
-        {/* Animated badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-full text-xs text-rose-400 font-semibold shadow-inner">
-          <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping"></span>
+    <main className="flex min-h-screen items-center justify-center bg-[#050b17] px-6 py-12 text-slate-100">
+      <div className="w-full max-w-4xl rounded-3xl border border-slate-800 bg-slate-950/70 p-10 shadow-2xl shadow-cyan-950/20">
+        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.25em] text-cyan-300">
+          <span className="h-2 w-2 rounded-full bg-cyan-400" />
           Threat Intelligence Engine Active
         </div>
 
-        {/* Hero Title */}
-        <div className="space-y-4">
-          <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl bg-gradient-to-r from-red-400 via-rose-400 to-indigo-400 bg-clip-text text-transparent">
-            CrossThreat
-          </h1>
-          <p className="text-lg text-zinc-400 max-w-md mx-auto leading-relaxed">
-            A state-of-the-art passive cyber-threat forecasting pipeline driven by sequential deep learning and MITRE ATT&CK stage mapping.
-          </p>
-        </div>
+        <h1 className="mt-6 text-5xl font-black uppercase tracking-tight text-slate-100 sm:text-6xl">
+          CrossThreat
+        </h1>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-400">
+          A passive cyber-threat forecasting dashboard for live replay, network telemetry, and model explainability.
+        </p>
 
-        {/* Launch Button */}
-        <div className="pt-4">
+        <div className="mt-8">
           <Link
             href="/dashboard"
-            className="inline-flex items-center justify-center h-14 px-8 rounded-full bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white font-bold transition-all transform hover:scale-105 shadow-lg shadow-rose-950/20 tracking-wide text-base"
+            className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-indigo-600 px-8 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-lg shadow-cyan-900/30 transition hover:brightness-110"
           >
-            Launch Analyst Dashboard →
+            Launch Analyst Dashboard ?
           </Link>
         </div>
-
-        {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-3 gap-4 pt-12 border-t border-zinc-900 text-left">
-          <div className="space-y-1">
-            <span className="text-zinc-500 text-xs uppercase font-bold">Temporal</span>
-            <p className="text-xs text-zinc-400">LSTM forecasts threat transition cycles</p>
-          </div>
-          <div className="space-y-1 border-l border-zinc-900 pl-4">
-            <span className="text-zinc-500 text-xs uppercase font-bold">ATT&CK Mapping</span>
-            <p className="text-xs text-zinc-400">Deterministic stage translation</p>
-          </div>
-          <div className="space-y-1 border-l border-zinc-900 pl-4">
-            <span className="text-zinc-500 text-xs uppercase font-bold">Explainable</span>
-            <p className="text-xs text-zinc-400">Tree SHAP and sequence attributions</p>
-          </div>
-        </div>
       </div>
-    </div>
+    </main>
   );
 }

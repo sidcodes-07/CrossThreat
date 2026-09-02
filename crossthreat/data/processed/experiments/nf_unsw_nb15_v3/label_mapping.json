@@ -1,0 +1,10 @@
+{
+  "binary_label_map": {
+    "Benign": 0,
+    "Attack": 1
+  },
+  "instance_distribution": {
+    "Benign": 45651,
+    "Attack": 4349
+  }
+}

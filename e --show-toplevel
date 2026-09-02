@@ -1,0 +1,21 @@
+[33m6dae598[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Frontend updated
+ WhatsApp Image 2026-08-28 at 22.44.50.jpeg         | Bin [31m0[m -> [32m386976[m bytes
+ crossthreat/app/alerts/[alertId]/page.tsx          |  96 [32m+++[m
+ crossthreat/app/alerts/page.tsx                    |  84 [32m+++[m
+ crossthreat/app/attack-timeline/page.tsx           | 154 [32m++++[m
+ crossthreat/app/dashboard/page.tsx                 | 785 [32m++++[m[31m-----------------[m
+ crossthreat/app/forecasting/page.tsx               |  89 [32m+++[m
+ crossthreat/app/globals.css                        |  33 [32m+[m[31m-[m
+ crossthreat/app/layout.tsx                         |  15 [32m+[m[31m-[m
+ crossthreat/app/model-insights/page.tsx            |  81 [32m+++[m
+ crossthreat/app/network/page.tsx                   | 132 [32m++++[m
+ crossthreat/app/page.tsx                           |  52 [32m+[m[31m-[m
+ crossthreat/app/reports/page.tsx                   | 100 [32m+++[m
+ crossthreat/app/settings/page.tsx                  |  29 [32m+[m
+ crossthreat/components/api.ts                      |  32 [32m+[m
+ crossthreat/components/dashboard-shell.tsx         | 140 [32m++++[m
+ crossthreat/engines/server.py                      | 349 [32m++++++++[m[31m-[m
+ .../components/DevelopmentProgressPanel.tsx        |   2 [32m+[m[31m-[m
+ crossthreat/package-lock.json                      |  35 [32m+[m[31m-[m
+ crossthreat/package.json                           |   1 [32m+[m
+ 19 files changed, 1485 insertions(+), 724 deletions(-)

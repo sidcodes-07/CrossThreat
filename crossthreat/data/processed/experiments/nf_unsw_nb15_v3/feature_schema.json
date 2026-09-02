@@ -1,0 +1,12 @@
+{
+  "canonical_features": [
+    "protocol",
+    "duration_ms",
+    "in_bytes",
+    "out_bytes",
+    "in_packets",
+    "out_packets",
+    "tcp_flags"
+  ],
+  "dataset_id": "nf_unsw_nb15_v3"
+}

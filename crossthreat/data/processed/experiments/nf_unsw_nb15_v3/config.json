@@ -1,0 +1,6 @@
+{
+  "dataset_id": "nf_unsw_nb15_v3",
+  "window_size": 5,
+  "random_seed": 42,
+  "rows_used": 50000
+}

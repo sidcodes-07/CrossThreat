@@ -1,0 +1,13 @@
+{
+  "rows_total": 19892,
+  "train_rows": 15913,
+  "test_rows": 3979,
+  "label_counts": {
+    "0": 17767,
+    "1": 2125
+  },
+  "train_start": -9223372037000,
+  "train_end": 1514970000,
+  "test_start": 1514970000,
+  "test_end": 1517650000
+}

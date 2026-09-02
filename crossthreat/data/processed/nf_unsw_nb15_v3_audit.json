@@ -1,0 +1,1173 @@
+{
+  "audit_metadata": {
+    "project_root": "C:\\CyberShield\\crossthreat",
+    "dataset_path": "C:\\CyberShield\\crossthreat\\data\\external\\NF-UNSW-NB15-v3.csv",
+    "dataset_filename": "NF-UNSW-NB15-v3.csv",
+    "file_size_bytes": 577360958,
+    "extension": ".csv",
+    "readable": true
+  },
+  "dataset_statistics": {
+    "row_count": 2365424,
+    "column_count": 55,
+    "column_names": [
+      "FLOW_START_MILLISECONDS",
+      "FLOW_END_MILLISECONDS",
+      "IPV4_SRC_ADDR",
+      "L4_SRC_PORT",
+      "IPV4_DST_ADDR",
+      "L4_DST_PORT",
+      "PROTOCOL",
+      "L7_PROTO",
+      "IN_BYTES",
+      "IN_PKTS",
+      "OUT_BYTES",
+      "OUT_PKTS",
+      "TCP_FLAGS",
+      "CLIENT_TCP_FLAGS",
+      "SERVER_TCP_FLAGS",
+      "FLOW_DURATION_MILLISECONDS",
+      "DURATION_IN",
+      "DURATION_OUT",
+      "MIN_TTL",
+      "MAX_TTL",
+      "LONGEST_FLOW_PKT",
+      "SHORTEST_FLOW_PKT",
+      "MIN_IP_PKT_LEN",
+      "MAX_IP_PKT_LEN",
+      "SRC_TO_DST_SECOND_BYTES",
+      "DST_TO_SRC_SECOND_BYTES",
+      "RETRANSMITTED_IN_BYTES",
+      "RETRANSMITTED_IN_PKTS",
+      "RETRANSMITTED_OUT_BYTES",
+      "RETRANSMITTED_OUT_PKTS",
+      "SRC_TO_DST_AVG_THROUGHPUT",
+      "DST_TO_SRC_AVG_THROUGHPUT",
+      "NUM_PKTS_UP_TO_128_BYTES",
+      "NUM_PKTS_128_TO_256_BYTES",
+      "NUM_PKTS_256_TO_512_BYTES",
+      "NUM_PKTS_512_TO_1024_BYTES",
+      "NUM_PKTS_1024_TO_1514_BYTES",
+      "TCP_WIN_MAX_IN",
+      "TCP_WIN_MAX_OUT",
+      "ICMP_TYPE",
+      "ICMP_IPV4_TYPE",
+      "DNS_QUERY_ID",
+      "DNS_QUERY_TYPE",
+      "DNS_TTL_ANSWER",
+      "FTP_COMMAND_RET_CODE",
+      "SRC_TO_DST_IAT_MIN",
+      "SRC_TO_DST_IAT_MAX",
+      "SRC_TO_DST_IAT_AVG",
+      "SRC_TO_DST_IAT_STDDEV",
+      "DST_TO_SRC_IAT_MIN",
+      "DST_TO_SRC_IAT_MAX",
+      "DST_TO_SRC_IAT_AVG",
+      "DST_TO_SRC_IAT_STDDEV",
+      "Label",
+      "Attack"
+    ],
+    "dtypes": {
+      "FLOW_START_MILLISECONDS": "int64",
+      "FLOW_END_MILLISECONDS": "int64",
+      "IPV4_SRC_ADDR": "str",
+      "L4_SRC_PORT": "int64",
+      "IPV4_DST_ADDR": "str",
+      "L4_DST_PORT": "int64",
+      "PROTOCOL": "int64",
+      "L7_PROTO": "float64",
+      "IN_BYTES": "int64",
+      "IN_PKTS": "int64",
+      "OUT_BYTES": "int64",
+      "OUT_PKTS": "int64",
+      "TCP_FLAGS": "int64",
+      "CLIENT_TCP_FLAGS": "int64",
+      "SERVER_TCP_FLAGS": "int64",
+      "FLOW_DURATION_MILLISECONDS": "int64",
+      "DURATION_IN": "int64",
+      "DURATION_OUT": "int64",
+      "MIN_TTL": "int64",
+      "MAX_TTL": "int64",
+      "LONGEST_FLOW_PKT": "int64",
+      "SHORTEST_FLOW_PKT": "int64",
+      "MIN_IP_PKT_LEN": "int64",
+      "MAX_IP_PKT_LEN": "int64",
+      "SRC_TO_DST_SECOND_BYTES": "float64",
+      "DST_TO_SRC_SECOND_BYTES": "float64",
+      "RETRANSMITTED_IN_BYTES": "int64",
+      "RETRANSMITTED_IN_PKTS": "int64",
+      "RETRANSMITTED_OUT_BYTES": "int64",
+      "RETRANSMITTED_OUT_PKTS": "int64",
+      "SRC_TO_DST_AVG_THROUGHPUT": "int64",
+      "DST_TO_SRC_AVG_THROUGHPUT": "int64",
+      "NUM_PKTS_UP_TO_128_BYTES": "int64",
+      "NUM_PKTS_128_TO_256_BYTES": "int64",
+      "NUM_PKTS_256_TO_512_BYTES": "int64",
+      "NUM_PKTS_512_TO_1024_BYTES": "int64",
+      "NUM_PKTS_1024_TO_1514_BYTES": "int64",
+      "TCP_WIN_MAX_IN": "int64",
+      "TCP_WIN_MAX_OUT": "int64",
+      "ICMP_TYPE": "int64",
+      "ICMP_IPV4_TYPE": "int64",
+      "DNS_QUERY_ID": "int64",
+      "DNS_QUERY_TYPE": "int64",
+      "DNS_TTL_ANSWER": "int64",
+      "FTP_COMMAND_RET_CODE": "int64",
+      "SRC_TO_DST_IAT_MIN": "int64",
+      "SRC_TO_DST_IAT_MAX": "int64",
+      "SRC_TO_DST_IAT_AVG": "int64",
+      "SRC_TO_DST_IAT_STDDEV": "int64",
+      "DST_TO_SRC_IAT_MIN": "int64",
+      "DST_TO_SRC_IAT_MAX": "int64",
+      "DST_TO_SRC_IAT_AVG": "int64",
+      "DST_TO_SRC_IAT_STDDEV": "int64",
+      "Label": "int64",
+      "Attack": "str"
+    },
+    "missing_values_per_column": {
+      "FLOW_START_MILLISECONDS": 0,
+      "FLOW_END_MILLISECONDS": 0,
+      "IPV4_SRC_ADDR": 0,
+      "L4_SRC_PORT": 0,
+      "IPV4_DST_ADDR": 0,
+      "L4_DST_PORT": 0,
+      "PROTOCOL": 0,
+      "L7_PROTO": 0,
+      "IN_BYTES": 0,
+      "IN_PKTS": 0,
+      "OUT_BYTES": 0,
+      "OUT_PKTS": 0,
+      "TCP_FLAGS": 0,
+      "CLIENT_TCP_FLAGS": 0,
+      "SERVER_TCP_FLAGS": 0,
+      "FLOW_DURATION_MILLISECONDS": 0,
+      "DURATION_IN": 0,
+      "DURATION_OUT": 0,
+      "MIN_TTL": 0,
+      "MAX_TTL": 0,
+      "LONGEST_FLOW_PKT": 0,
+      "SHORTEST_FLOW_PKT": 0,
+      "MIN_IP_PKT_LEN": 0,
+      "MAX_IP_PKT_LEN": 0,
+      "SRC_TO_DST_SECOND_BYTES": 63425,
+      "DST_TO_SRC_SECOND_BYTES": 0,
+      "RETRANSMITTED_IN_BYTES": 0,
+      "RETRANSMITTED_IN_PKTS": 0,
+      "RETRANSMITTED_OUT_BYTES": 0,
+      "RETRANSMITTED_OUT_PKTS": 0,
+      "SRC_TO_DST_AVG_THROUGHPUT": 0,
+      "DST_TO_SRC_AVG_THROUGHPUT": 0,
+      "NUM_PKTS_UP_TO_128_BYTES": 0,
+      "NUM_PKTS_128_TO_256_BYTES": 0,
+      "NUM_PKTS_256_TO_512_BYTES": 0,
+      "NUM_PKTS_512_TO_1024_BYTES": 0,
+      "NUM_PKTS_1024_TO_1514_BYTES": 0,
+      "TCP_WIN_MAX_IN": 0,
+      "TCP_WIN_MAX_OUT": 0,
+      "ICMP_TYPE": 0,
+      "ICMP_IPV4_TYPE": 0,
+      "DNS_QUERY_ID": 0,
+      "DNS_QUERY_TYPE": 0,
+      "DNS_TTL_ANSWER": 0,
+      "FTP_COMMAND_RET_CODE": 0,
+      "SRC_TO_DST_IAT_MIN": 0,
+      "SRC_TO_DST_IAT_MAX": 0,
+      "SRC_TO_DST_IAT_AVG": 0,
+      "SRC_TO_DST_IAT_STDDEV": 0,
+      "DST_TO_SRC_IAT_MIN": 0,
+      "DST_TO_SRC_IAT_MAX": 0,
+      "DST_TO_SRC_IAT_AVG": 0,
+      "DST_TO_SRC_IAT_STDDEV": 0,
+      "Label": 0,
+      "Attack": 0
+    },
+    "total_missing_values": 63425,
+    "duplicate_row_count": 14815,
+    "numeric_summary": {
+      "FLOW_START_MILLISECONDS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 1421927376907.0,
+        "max": 1424262564927.0
+      },
+      "FLOW_END_MILLISECONDS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 1421927414036.0,
+        "max": 1424262565011.0
+      },
+      "L4_SRC_PORT": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 65535.0
+      },
+      "L4_DST_PORT": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 65535.0
+      },
+      "PROTOCOL": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 255.0
+      },
+      "L7_PROTO": {
+        "dtype": "float64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 421.0
+      },
+      "IN_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 1.0,
+        "max": 27020934.0
+      },
+      "IN_PKTS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 1.0,
+        "max": 20166.0
+      },
+      "OUT_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 14656752.0
+      },
+      "OUT_PKTS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 11024.0
+      },
+      "TCP_FLAGS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 31.0
+      },
+      "CLIENT_TCP_FLAGS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 31.0
+      },
+      "SERVER_TCP_FLAGS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 31.0
+      },
+      "FLOW_DURATION_MILLISECONDS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 120948.0
+      },
+      "DURATION_IN": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 120948.0
+      },
+      "DURATION_OUT": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 120922.0
+      },
+      "MIN_TTL": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 255.0
+      },
+      "MAX_TTL": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 255.0
+      },
+      "LONGEST_FLOW_PKT": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 28.0,
+        "max": 1508.0
+      },
+      "SHORTEST_FLOW_PKT": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 28.0,
+        "max": 1508.0
+      },
+      "MIN_IP_PKT_LEN": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 680.0
+      },
+      "MAX_IP_PKT_LEN": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 28.0,
+        "max": 1508.0
+      },
+      "SRC_TO_DST_SECOND_BYTES": {
+        "dtype": "float64",
+        "missing": 63425,
+        "infinite": 59068,
+        "min": 0.0,
+        "max": Infinity
+      },
+      "DST_TO_SRC_SECOND_BYTES": {
+        "dtype": "float64",
+        "missing": 0,
+        "infinite": 122493,
+        "min": 0.0014166535495041,
+        "max": Infinity
+      },
+      "RETRANSMITTED_IN_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 13510379.0
+      },
+      "RETRANSMITTED_IN_PKTS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 10081.0
+      },
+      "RETRANSMITTED_OUT_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 7328208.0
+      },
+      "RETRANSMITTED_OUT_PKTS": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 5508.0
+      },
+      "SRC_TO_DST_AVG_THROUGHPUT": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 11.0,
+        "max": 36000000.0
+      },
+      "DST_TO_SRC_AVG_THROUGHPUT": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 23530666.0
+      },
+      "NUM_PKTS_UP_TO_128_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 3840.0
+      },
+      "NUM_PKTS_128_TO_256_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 298.0
+      },
+      "NUM_PKTS_256_TO_512_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 2564.0
+      },
+      "NUM_PKTS_512_TO_1024_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 642.0
+      },
+      "NUM_PKTS_1024_TO_1514_BYTES": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 17500.0
+      },
+      "TCP_WIN_MAX_IN": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 65533.0
+      },
+      "TCP_WIN_MAX_OUT": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 65531.0
+      },
+      "ICMP_TYPE": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 65285.0
+      },
+      "ICMP_IPV4_TYPE": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 255.0
+      },
+      "DNS_QUERY_ID": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 65535.0
+      },
+      "DNS_QUERY_TYPE": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 55937.0
+      },
+      "DNS_TTL_ANSWER": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 4283358309.0
+      },
+      "FTP_COMMAND_RET_CODE": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 501.0
+      },
+      "SRC_TO_DST_IAT_MIN": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 60598.0
+      },
+      "SRC_TO_DST_IAT_MAX": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 60598.0
+      },
+      "SRC_TO_DST_IAT_AVG": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 30299.0
+      },
+      "SRC_TO_DST_IAT_STDDEV": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 30299.0
+      },
+      "DST_TO_SRC_IAT_MIN": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 1490.0
+      },
+      "DST_TO_SRC_IAT_MAX": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 60598.0
+      },
+      "DST_TO_SRC_IAT_AVG": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 20199.0
+      },
+      "DST_TO_SRC_IAT_STDDEV": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 28566.0
+      },
+      "Label": {
+        "dtype": "int64",
+        "missing": 0,
+        "infinite": 0,
+        "min": 0.0,
+        "max": 1.0
+      }
+    },
+    "categorical_summary": {
+      "IPV4_SRC_ADDR": {
+        "dtype": "str",
+        "missing": 0,
+        "unique_count": 40,
+        "unique_values_sample": [
+          "59.166.0.2",
+          "59.166.0.4",
+          "59.166.0.0",
+          "59.166.0.8",
+          "59.166.0.1",
+          "175.45.176.0",
+          "175.45.176.3",
+          "59.166.0.3",
+          "59.166.0.9",
+          "59.166.0.6"
+        ]
+      },
+      "IPV4_DST_ADDR": {
+        "dtype": "str",
+        "missing": 0,
+        "unique_count": 40,
+        "unique_values_sample": [
+          "149.171.126.3",
+          "149.171.126.6",
+          "149.171.126.9",
+          "149.171.126.7",
+          "149.171.126.1",
+          "149.171.126.5",
+          "149.171.126.16",
+          "149.171.126.4",
+          "149.171.126.8",
+          "149.171.126.14"
+        ]
+      },
+      "Attack": {
+        "dtype": "str",
+        "missing": 0,
+        "unique_count": 10,
+        "unique_values_sample": [
+          "Benign",
+          "Fuzzers",
+          "Exploits",
+          "Backdoor",
+          "Reconnaissance",
+          "Generic",
+          "DoS",
+          "Shellcode",
+          "Analysis",
+          "Worms"
+        ]
+      }
+    },
+    "label_distribution": {
+      "0": 2237731,
+      "1": 127693
+    },
+    "attack_distribution": {
+      "Benign": 2237731,
+      "Exploits": 42748,
+      "Fuzzers": 33816,
+      "Generic": 19651,
+      "Reconnaissance": 17074,
+      "DoS": 5980,
+      "Backdoor": 4659,
+      "Shellcode": 2381,
+      "Analysis": 1226,
+      "Worms": 158
+    },
+    "benign_total": 2237731,
+    "attack_total": 127693,
+    "attack_classes": 10
+  },
+  "network_feature_analysis": {
+    "source_address_fields": [
+      "IPV4_SRC_ADDR"
+    ],
+    "destination_address_fields": [
+      "IPV4_DST_ADDR"
+    ],
+    "source_port_fields": [
+      "L4_SRC_PORT"
+    ],
+    "destination_port_fields": [
+      "L4_DST_PORT"
+    ],
+    "protocol_fields": [
+      "PROTOCOL",
+      "L7_PROTO"
+    ],
+    "flow_duration_fields": [
+      "FLOW_DURATION_MILLISECONDS",
+      "DURATION_IN",
+      "DURATION_OUT"
+    ],
+    "packet_and_byte_fields": [
+      "IN_BYTES",
+      "IN_PKTS",
+      "OUT_BYTES",
+      "OUT_PKTS",
+      "LONGEST_FLOW_PKT",
+      "SHORTEST_FLOW_PKT",
+      "MIN_IP_PKT_LEN",
+      "MAX_IP_PKT_LEN",
+      "SRC_TO_DST_SECOND_BYTES",
+      "DST_TO_SRC_SECOND_BYTES",
+      "RETRANSMITTED_IN_BYTES",
+      "RETRANSMITTED_IN_PKTS",
+      "RETRANSMITTED_OUT_BYTES",
+      "RETRANSMITTED_OUT_PKTS",
+      "NUM_PKTS_UP_TO_128_BYTES",
+      "NUM_PKTS_128_TO_256_BYTES",
+      "NUM_PKTS_256_TO_512_BYTES",
+      "NUM_PKTS_512_TO_1024_BYTES",
+      "NUM_PKTS_1024_TO_1514_BYTES"
+    ],
+    "tcp_flag_fields": [
+      "TCP_FLAGS",
+      "CLIENT_TCP_FLAGS",
+      "SERVER_TCP_FLAGS"
+    ],
+    "label_column": "Label",
+    "attack_column": "Attack",
+    "suspicious_identifier_columns": [
+      "IPV4_SRC_ADDR",
+      "IPV4_DST_ADDR",
+      "L4_SRC_PORT",
+      "L4_DST_PORT",
+      "DNS_QUERY_ID",
+      "DNS_QUERY_TYPE"
+    ],
+    "leakage_prone_fields": [
+      "IPV4_SRC_ADDR",
+      "IPV4_DST_ADDR",
+      "L4_SRC_PORT",
+      "L4_DST_PORT",
+      "DNS_QUERY_ID",
+      "DNS_QUERY_TYPE",
+      "FTP_COMMAND_RET_CODE",
+      "ICMP_TYPE"
+    ],
+    "feature_classification": {
+      "IDENTIFIER": [
+        "IPV4_SRC_ADDR",
+        "IPV4_DST_ADDR",
+        "L4_SRC_PORT",
+        "L4_DST_PORT",
+        "DNS_QUERY_ID"
+      ],
+      "TIMESTAMP": [
+        "FLOW_START_MILLISECONDS",
+        "FLOW_END_MILLISECONDS",
+        "FLOW_DURATION_MILLISECONDS"
+      ],
+      "TARGET": [
+        "Label",
+        "Attack"
+      ],
+      "NUMERIC": [
+        "FLOW_START_MILLISECONDS",
+        "FLOW_END_MILLISECONDS",
+        "L4_SRC_PORT",
+        "L4_DST_PORT",
+        "PROTOCOL",
+        "L7_PROTO",
+        "IN_BYTES",
+        "IN_PKTS",
+        "OUT_BYTES",
+        "OUT_PKTS",
+        "TCP_FLAGS",
+        "CLIENT_TCP_FLAGS",
+        "SERVER_TCP_FLAGS",
+        "FLOW_DURATION_MILLISECONDS",
+        "DURATION_IN",
+        "DURATION_OUT",
+        "MIN_TTL",
+        "MAX_TTL",
+        "LONGEST_FLOW_PKT",
+        "SHORTEST_FLOW_PKT",
+        "MIN_IP_PKT_LEN",
+        "MAX_IP_PKT_LEN",
+        "SRC_TO_DST_SECOND_BYTES",
+        "DST_TO_SRC_SECOND_BYTES",
+        "RETRANSMITTED_IN_BYTES",
+        "RETRANSMITTED_IN_PKTS",
+        "RETRANSMITTED_OUT_BYTES",
+        "RETRANSMITTED_OUT_PKTS",
+        "SRC_TO_DST_AVG_THROUGHPUT",
+        "DST_TO_SRC_AVG_THROUGHPUT",
+        "NUM_PKTS_UP_TO_128_BYTES",
+        "NUM_PKTS_128_TO_256_BYTES",
+        "NUM_PKTS_256_TO_512_BYTES",
+        "NUM_PKTS_512_TO_1024_BYTES",
+        "NUM_PKTS_1024_TO_1514_BYTES",
+        "TCP_WIN_MAX_IN",
+        "TCP_WIN_MAX_OUT",
+        "ICMP_TYPE",
+        "ICMP_IPV4_TYPE",
+        "DNS_QUERY_ID",
+        "DNS_QUERY_TYPE",
+        "DNS_TTL_ANSWER",
+        "FTP_COMMAND_RET_CODE",
+        "SRC_TO_DST_IAT_MIN",
+        "SRC_TO_DST_IAT_MAX",
+        "SRC_TO_DST_IAT_AVG",
+        "SRC_TO_DST_IAT_STDDEV",
+        "DST_TO_SRC_IAT_MIN",
+        "DST_TO_SRC_IAT_MAX",
+        "DST_TO_SRC_IAT_AVG",
+        "DST_TO_SRC_IAT_STDDEV"
+      ],
+      "CATEGORICAL": [
+        "L7_PROTO"
+      ]
+    }
+  },
+  "temporal_analysis": {
+    "timestamp_columns": [
+      "FLOW_START_MILLISECONDS",
+      "FLOW_END_MILLISECONDS",
+      "FLOW_DURATION_MILLISECONDS"
+    ],
+    "timestamp_details": {
+      "FLOW_START_MILLISECONDS": {
+        "dtype": "int64",
+        "min": "2015-01-22T11:49:36.907000+00:00",
+        "max": "2015-02-18T12:29:24.927000+00:00",
+        "unique_timestamps": 1893404,
+        "duplicate_timestamps": 472020,
+        "chronologically_sorted": false,
+        "coverage": {
+          "start": "2015-01-22T11:49:36.907000+00:00",
+          "end": "2015-02-18T12:29:24.927000+00:00",
+          "span_seconds": 2335188.02
+        }
+      },
+      "FLOW_END_MILLISECONDS": {
+        "dtype": "int64",
+        "min": "2015-01-22T11:50:14.036000+00:00",
+        "max": "2015-02-18T12:29:25.011000+00:00",
+        "unique_timestamps": 2299732,
+        "duplicate_timestamps": 65692,
+        "chronologically_sorted": false,
+        "coverage": {
+          "start": "2015-01-22T11:50:14.036000+00:00",
+          "end": "2015-02-18T12:29:25.011000+00:00",
+          "span_seconds": 2335150.975
+        }
+      },
+      "FLOW_DURATION_MILLISECONDS": {
+        "dtype": "int64",
+        "min": "1970-01-01T00:00:00+00:00",
+        "max": "1970-01-01T00:02:00.948000+00:00",
+        "unique_timestamps": 19809,
+        "duplicate_timestamps": 2345615,
+        "chronologically_sorted": false,
+        "coverage": {
+          "start": "1970-01-01T00:00:00+00:00",
+          "end": "1970-01-01T00:02:00.948000+00:00",
+          "span_seconds": 120.948
+        }
+      }
+    },
+    "suitability_assessment": "PARTIALLY SUITABLE. The dataset contains valid timestamps and sequential flow records, so sequence-window forecasting is possible, but the data are flow-level telemetry rather than a clean per-host/session event stream and should be used with careful grouping and explicit leakage controls."
+  },
+  "cic_2017_compatibility": [
+    {
+      "NF feature": "FLOW_START_MILLISECONDS",
+      "CIC feature": "Timestamp",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "Both encode flow start time; NF uses epoch milliseconds and CIC uses a human-readable timestamp."
+    },
+    {
+      "NF feature": "IPV4_SRC_ADDR",
+      "CIC feature": "Src IP",
+      "Match type": "EXACT",
+      "Usable?": "No",
+      "Reason": "Same network identifier concept, but kept as an identifier and not a model feature."
+    },
+    {
+      "NF feature": "IPV4_DST_ADDR",
+      "CIC feature": "Dst IP",
+      "Match type": "EXACT",
+      "Usable?": "No",
+      "Reason": "Same network identifier concept; not a valid predictive feature for generalization."
+    },
+    {
+      "NF feature": "L4_SRC_PORT",
+      "CIC feature": "Src Port",
+      "Match type": "EXACT",
+      "Usable?": "No",
+      "Reason": "Port values are often protocol- and host-dependent and can leak endpoint identity."
+    },
+    {
+      "NF feature": "L4_DST_PORT",
+      "CIC feature": "Dst Port",
+      "Match type": "EXACT",
+      "Usable?": "No",
+      "Reason": "Destination port is semantically comparable, but can leak service identity and is unstable across datasets."
+    },
+    {
+      "NF feature": "PROTOCOL",
+      "CIC feature": "Protocol",
+      "Match type": "EXACT",
+      "Usable?": "Yes",
+      "Reason": "Same protocol code used to describe L3/L4 transport."
+    },
+    {
+      "NF feature": "FLOW_DURATION_MILLISECONDS",
+      "CIC feature": "Flow Duration",
+      "Match type": "EXACT",
+      "Usable?": "Yes",
+      "Reason": "Equivalent duration metric in millisecond units."
+    },
+    {
+      "NF feature": "IN_BYTES",
+      "CIC feature": "TotLen Fwd Pkts",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "NF provides inbound byte count; CIC uses forward-total-length proxy, not exact same feature."
+    },
+    {
+      "NF feature": "OUT_BYTES",
+      "CIC feature": "TotLen Bwd Pkts",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "NF provides outbound byte count; CIC uses reverse-direction total length, with direction semantics similar but not identical."
+    },
+    {
+      "NF feature": "TCP_FLAGS",
+      "CIC feature": "SYN Flag Cnt / ACK Flag Cnt / PSH Flag Cnt / RST Flag Cnt",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "NF has aggregate TCP flags while CIC stores separate counts; this is a comparable signal but not a direct one-to-one match."
+    },
+    {
+      "NF feature": "Label",
+      "CIC feature": "Label",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "Binary label in NF versus multi-class attack taxonomy in CIC; label mapping requires explicit recoding."
+    }
+  ],
+  "cic_2018_compatibility": [
+    {
+      "NF feature": "FLOW_START_MILLISECONDS",
+      "CIC feature": "Timestamp",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "Same concept in both collections but different timestamp formatting and granularity."
+    },
+    {
+      "NF feature": "IPV4_SRC_ADDR",
+      "CIC feature": "Src IP",
+      "Match type": "EXACT",
+      "Usable?": "No",
+      "Reason": "Identifier field, not a valid generalization feature."
+    },
+    {
+      "NF feature": "IPV4_DST_ADDR",
+      "CIC feature": "Dst IP",
+      "Match type": "EXACT",
+      "Usable?": "No",
+      "Reason": "Identifier field and likely source-specific leakage."
+    },
+    {
+      "NF feature": "L4_SRC_PORT",
+      "CIC feature": "Src Port",
+      "Match type": "EXACT",
+      "Usable?": "No",
+      "Reason": "Endpoint-derived port information is not stable across datasets or networks."
+    },
+    {
+      "NF feature": "L4_DST_PORT",
+      "CIC feature": "Dst Port",
+      "Match type": "EXACT",
+      "Usable?": "No",
+      "Reason": "Service identity can leak task-specific patterns and should be excluded from generalization models."
+    },
+    {
+      "NF feature": "PROTOCOL",
+      "CIC feature": "Protocol",
+      "Match type": "EXACT",
+      "Usable?": "Yes",
+      "Reason": "Protocol IDs are consistently represented."
+    },
+    {
+      "NF feature": "FLOW_DURATION_MILLISECONDS",
+      "CIC feature": "Flow Duration",
+      "Match type": "EXACT",
+      "Usable?": "Yes",
+      "Reason": "Equivalent concept."
+    },
+    {
+      "NF feature": "IN_BYTES",
+      "CIC feature": "Total Length of Fwd Packet",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "Direction-specific byte totals approximate each other."
+    },
+    {
+      "NF feature": "OUT_BYTES",
+      "CIC feature": "Total Length of Bwd Packet",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "Aggregate directional volumes are comparable."
+    },
+    {
+      "NF feature": "TCP_FLAGS",
+      "CIC feature": "SYN/ACK/PSH/RST flags",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "Similar handshake/abnormal traffic indicators, but not exact field-level alignment."
+    },
+    {
+      "NF feature": "Attack",
+      "CIC feature": "Label",
+      "Match type": "APPROXIMATE",
+      "Usable?": "Yes",
+      "Reason": "Both are attack taxonomy labels, but the attack vocabulary differs across datasets and must be mapped explicitly."
+    }
+  ],
+  "label_compatibility": [
+    {
+      "Original label": "Benign",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "Benign",
+      "Mapping type": "EXACT",
+      "Reason": "Clearly normal traffic without malicious behavior."
+    },
+    {
+      "Original label": "Fuzzers",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "Fuzzers",
+      "Mapping type": "EXACT",
+      "Reason": "Specific malicious probing category recorded by the dataset."
+    },
+    {
+      "Original label": "Exploits",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "Exploits",
+      "Mapping type": "EXACT",
+      "Reason": "Direct exploit-attempt class."
+    },
+    {
+      "Original label": "DoS",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "DoS",
+      "Mapping type": "EXACT",
+      "Reason": "Direct denial-of-service class."
+    },
+    {
+      "Original label": "Reconnaissance",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "Reconnaissance",
+      "Mapping type": "EXACT",
+      "Reason": "Reconnaissance/scan traffic remains distinct."
+    },
+    {
+      "Original label": "Backdoor",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "Backdoor",
+      "Mapping type": "EXACT",
+      "Reason": "Mission-specific backdoor pattern."
+    },
+    {
+      "Original label": "Shellcode",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "Shellcode",
+      "Mapping type": "APPROXIMATE",
+      "Reason": "Equivalent exploit payload concept, but not identical to CIC naming."
+    },
+    {
+      "Original label": "Analysis",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "Analysis",
+      "Mapping type": "APPROXIMATE",
+      "Reason": "May align with some web-attack or reconnaissance behavior."
+    },
+    {
+      "Original label": "Worms",
+      "Dataset": "NF-UNSW-NB15-v3",
+      "Proposed canonical label": "Worms",
+      "Mapping type": "EXACT",
+      "Reason": "Direct worm category."
+    },
+    {
+      "Original label": "Benign",
+      "Dataset": "CIC-IDS2017",
+      "Proposed canonical label": "Benign",
+      "Mapping type": "EXACT",
+      "Reason": "Standard benign traffic label."
+    },
+    {
+      "Original label": "Infiltration",
+      "Dataset": "CIC-IDS2017",
+      "Proposed canonical label": "Infiltration",
+      "Mapping type": "EXACT",
+      "Reason": "Direct infiltration class."
+    },
+    {
+      "Original label": "Web Attack / Brute Force",
+      "Dataset": "CIC-IDS2018",
+      "Proposed canonical label": "WebAttack_BruteForce",
+      "Mapping type": "APPROXIMATE",
+      "Reason": "Web-attack family; a broader label than generic brute-force class and not identical to NF labels."
+    },
+    {
+      "Original label": "Web Attack / XSS",
+      "Dataset": "CIC-IDS2018",
+      "Proposed canonical label": "WebAttack_XSS",
+      "Mapping type": "APPROXIMATE",
+      "Reason": "Security-specific web attack type that is not equivalent to the NF taxonomy."
+    },
+    {
+      "Original label": "Web Attack / SQL Injection",
+      "Dataset": "CIC-IDS2018",
+      "Proposed canonical label": "WebAttack_SQLi",
+      "Mapping type": "APPROXIMATE",
+      "Reason": "Application-layer web attack with no direct NF equivalent."
+    },
+    {
+      "Original label": "Bot",
+      "Dataset": "CIC-IDS2018",
+      "Proposed canonical label": "Bot",
+      "Mapping type": "EXACT",
+      "Reason": "Botnet class."
+    },
+    {
+      "Original label": "DDOS",
+      "Dataset": "CIC-IDS2018",
+      "Proposed canonical label": "DoS",
+      "Mapping type": "APPROXIMATE",
+      "Reason": "Often grouped under DoS/DDoS family, but the taxonomies differ and should not be forced into exact equivalence."
+    },
+    {
+      "Original label": "Brute Force",
+      "Dataset": "CIC-IDS2018",
+      "Proposed canonical label": "BruteForce",
+      "Mapping type": "APPROXIMATE",
+      "Reason": "Attack family with overlap, but not a direct NF dataset label."
+    }
+  ],
+  "common_feature_set": {
+    "common_across_all_datasets": [
+      "PROTOCOL",
+      "FLOW_DURATION_MILLISECONDS",
+      "IN_BYTES",
+      "OUT_BYTES",
+      "IN_PKTS",
+      "OUT_PKTS",
+      "MIN_TTL",
+      "MAX_TTL",
+      "TCP_FLAGS",
+      "SRC_TO_DST_SECOND_BYTES",
+      "DST_TO_SRC_SECOND_BYTES",
+      "SRC_TO_DST_AVG_THROUGHPUT",
+      "DST_TO_SRC_AVG_THROUGHPUT"
+    ],
+    "approximate_equivalents": [
+      "FLOW_START_MILLISECONDS ~ Timestamp",
+      "PROTOCOL ~ Protocol",
+      "FLOW_DURATION_MILLISECONDS ~ Flow Duration",
+      "IN_BYTES/OUT_BYTES ~ Total Length of Forward/Backward packets",
+      "TCP_FLAGS ~ SYN/ACK/PSH/RST flag counts"
+    ],
+    "dataset_specific_features": [
+      "DNS_QUERY_ID",
+      "DNS_QUERY_TYPE",
+      "ICMP_TYPE",
+      "FTP_COMMAND_RET_CODE",
+      "L7_PROTO",
+      "TCP_WIN_MAX_IN",
+      "TCP_WIN_MAX_OUT"
+    ],
+    "features_to_exclude": [
+      "IPV4_SRC_ADDR",
+      "IPV4_DST_ADDR",
+      "L4_SRC_PORT",
+      "L4_DST_PORT",
+      "DNS_QUERY_ID",
+      "DNS_QUERY_TYPE",
+      "FTP_COMMAND_RET_CODE",
+      "ICMP_TYPE"
+    ],
+    "recommended_canonical_feature_count": 12,
+    "recommended_canonical_schema": [
+      "PROTOCOL",
+      "FLOW_DURATION_MILLISECONDS",
+      "IN_BYTES",
+      "OUT_BYTES",
+      "IN_PKTS",
+      "OUT_PKTS",
+      "MIN_TTL",
+      "MAX_TTL",
+      "SRC_TO_DST_SECOND_BYTES",
+      "DST_TO_SRC_SECOND_BYTES",
+      "SRC_TO_DST_AVG_THROUGHPUT",
+      "DST_TO_SRC_AVG_THROUGHPUT",
+      "TOTAL_TCP_FLAG_COUNT",
+      "TOTAL_BYTE_COUNT",
+      "TOTAL_PACKET_COUNT"
+    ]
+  },
+  "evaluation_design": {
+    "A": "CIC-IDS2017 -> CIC-IDS2017: chronological 80/20 split within the dataset; fit scaler & label encoder only on training partitions; never create windows across the train/test boundary.",
+    "B": "CIC-IDS2018 -> CIC-IDS2018: same as A, with dataset identity retained across the real 2018 files.",
+    "C": "NF-UNSW-NB15-v3 -> NF-UNSW-NB15-v3: chronological 80/20 split on flow timestamps; fit preprocessing only on train; create windows from prior observations only and forecast next state/label.",
+    "D": "CIC-IDS2018 -> NF-UNSW-NB15-v3: valid only as a transfer-domain study with a shared canonical feature set; not a clean direct benchmark because the feature and label spaces differ.",
+    "E": "NF-UNSW-NB15-v3 -> CIC-IDS2018: same caveat as D; transfer evaluation is possible but only with explicit domain adaptation and feature alignment."
+  },
+  "final_assessment": {
+    "suitable_for_cross_threat": "Conditionally suitable. It is usable for temporal forecasting and same-dataset benchmark experiments when used with explicit chronology and a canonical feature subset; it is not directly interchangeable with CIC without careful mapping and domain-shift controls.",
+    "conditions": [
+      "Keep dataset identity explicit and never merge raw records without metadata.",
+      "Use a common feature subset with exclusions for identifiers and leakage-prone fields.",
+      "Perform temporal windows only within each train/test partition.",
+      "Map labels explicitly rather than forcing a single taxonomy across all datasets."
+    ]
+  }
+}

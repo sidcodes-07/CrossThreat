@@ -253,7 +253,7 @@ const MissionDetailsContent: React.FC<MissionDetailsContentProps> = ({ mission, 
               </ul>
             </div>
             <div className="feature-category">
-              <h5>Redundant Features (>0.85 correlation)</h5>
+              <h5>Redundant Features (&gt;0.85 correlation)</h5>
               <ul>
                 <li>Backward PSH Flags</li>
                 <li>Backward URG Flags</li>

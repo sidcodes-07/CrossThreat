@@ -1,0 +1,6 @@
+{
+  "dataset_id": "cic_ids2017",
+  "window_size": 5,
+  "random_seed": 42,
+  "rows_used": 3000
+}

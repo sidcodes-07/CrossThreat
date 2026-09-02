@@ -1,0 +1,52 @@
+{
+  "dataset_id": "cic_to_nf",
+  "model": "random_forest",
+  "source_dataset": "cic_ids2018",
+  "target_dataset": "nf_unsw_nb15_v3",
+  "rows_used": {
+    "source_train": 15913,
+    "target_test": 10000
+  },
+  "feature_schema": [
+    "protocol",
+    "duration_ms",
+    "in_bytes",
+    "out_bytes",
+    "in_packets",
+    "out_packets",
+    "tcp_flags"
+  ],
+  "metrics": {
+    "accuracy": 0.8927571028411364,
+    "balanced_accuracy": 0.4943320949675279,
+    "macro_precision": 0.4885361552028219,
+    "macro_recall": 0.4943320949675279,
+    "macro_f1": 0.4887302936873957,
+    "weighted_f1": 0.8747518567883701,
+    "attack_precision": 0.05322128851540616,
+    "attack_recall": 0.025232403718459494,
+    "attack_f1": 0.03423423423423423,
+    "benign_recall": 0.9634317862165963,
+    "confusion_matrix": [
+      [
+        8905,
+        338
+      ],
+      [
+        734,
+        19
+      ]
+    ]
+  },
+  "label_overlap": {
+    "source": [
+      0,
+      1
+    ],
+    "target": [
+      0,
+      1
+    ]
+  },
+  "domain_shift_warning": "Cross-dataset evaluation is a domain-shift study; not directly comparable to same-dataset benchmarking."
+}

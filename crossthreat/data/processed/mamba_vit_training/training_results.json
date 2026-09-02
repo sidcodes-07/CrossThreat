@@ -1,0 +1,27 @@
+{
+  "mamba": {
+    "accuracy": 0.962484993997599,
+    "macro_precision": 0.8906649616368287,
+    "macro_recall": 0.8223561450400928,
+    "macro_f1": 0.8525713294597173,
+    "weighted_f1": 0.960689393638447,
+    "attack_precision": 0.8088235294117647,
+    "attack_recall": 0.6573705179282868,
+    "attack_f1": 0.7252747252747253,
+    "benign_recall": 0.9873417721518988
+  },
+  "vit": {
+    "accuracy": 0.9600840336134454,
+    "macro_precision": 0.8695133318269122,
+    "macro_recall": 0.8308165153946585,
+    "macro_f1": 0.8488633557326124,
+    "weighted_f1": 0.95898155459072,
+    "attack_precision": 0.7649700598802395,
+    "attack_recall": 0.6786188579017264,
+    "attack_f1": 0.7192118226600985,
+    "benign_recall": 0.9830141728875906
+  },
+  "swin": {
+    "status": "not implemented for 1D flow-sequence training"
+  }
+}
